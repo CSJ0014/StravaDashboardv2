@@ -1,5 +1,3 @@
-import fetch from 'node-fetch'
-
 const STRAVA_TOKEN_URL = 'https://www.strava.com/oauth/token'
 const STRAVA_ACTIVITIES_URL = 'https://www.strava.com/api/v3/athlete/activities'
 
