@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import Header from './components/Header.jsx'
 import Sidebar from './components/Sidebar.jsx'
-import RideDetails from './components/RideDetails.jsx'
+import RideDetails from './components/RideDetailsv2.jsx'
 import TxtButton from './components/TxtButton.jsx'
 import { getActivities, getActivityStreams } from './api/strava.js'
 
