@@ -43,7 +43,8 @@ const calcZones = (arr, thresholds, labels, scale) => {
 };
 
 export default function RideDetails({ activity, streams }) {
-  if (!activity) return <div className="card panel empty">Select a ride from the left.</div>;
+  if (!activity)
+    return <div className="card panel empty">Select a ride from the left.</div>;
 
   // --- normalize streams data ---
   const watts = streams?.watts?.data || streams?.watts_calc?.data || [];
@@ -70,6 +71,18 @@ export default function RideDetails({ activity, streams }) {
       hr: hr[i] ?? null,
     }));
   }, [time, watts, hr]);
+
+  // --- debug data structure ---
+  const debugInfo = useMemo(() => {
+    if (!streams) return "No streams object";
+    const keys = Object.keys(streams);
+    return keys
+      .map(k => {
+        const arr = streams[k]?.data || [];
+        return `${k}: ${arr.length}`;
+      })
+      .join(", ");
+  }, [streams]);
 
   return (
     <div>
@@ -114,6 +127,12 @@ export default function RideDetails({ activity, streams }) {
           colors={["#3a86ff", "#4cc9f0", "#06d6a0", "#ffd166", "#ef476f", "#ff006e"]} />
         <ZoneGrid title="HR Zones" labels={labelsH} pct={hrPct}
           colors={["#56ccf2", "#4bc0c8", "#c779d0", "#f093fb", "#f5576c"]} />
+      </div>
+
+      {/* Debug Card */}
+      <div className="card panel" style={{ marginTop: 16, background: "rgba(255,255,255,0.05)", color: "#ccc" }}>
+        <h4>Debug Info</h4>
+        <pre style={{ fontSize: 13, whiteSpace: "pre-wrap" }}>{debugInfo}</pre>
       </div>
     </div>
   );
