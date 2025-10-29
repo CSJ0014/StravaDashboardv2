@@ -10,22 +10,31 @@ import {
   Bar,
   ResponsiveContainer,
 } from "recharts";
+import TxtButton from "./TxtButton";
 
 export default function RideDetails({ rideId }) {
-  const [data, setData] = useState(null);
+  const [rideData, setRideData] = useState(null);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!rideId) return;
+    setLoading(true);
     fetch(`/api/strava/activity?id=${rideId}`)
       .then((r) => r.json())
-      .then((json) => setData(json))
-      .catch((e) => setError(e.message));
+      .then((json) => {
+        setRideData(json);
+        setLoading(false);
+      })
+      .catch((e) => {
+        setError(e.message);
+        setLoading(false);
+      });
   }, [rideId]);
 
   if (!rideId)
     return (
-      <div style={{ padding: "2rem" }}>
+      <div style={{ padding: "2rem", textAlign: "center" }}>
         <h2>Ride Dashboard</h2>
         <p>Select a ride to view details</p>
       </div>
@@ -38,23 +47,22 @@ export default function RideDetails({ rideId }) {
       </div>
     );
 
-  if (!data) return <div style={{ padding: "2rem" }}>Loading ride data...</div>;
+  if (loading || !rideData)
+    return <div style={{ padding: "2rem" }}>Loading ride data...</div>;
 
-  const { activity, streams } = data;
-  if (!activity) return <p>No activity data</p>;
-  if (!streams) return <p>No streams data</p>;
+  const { activity, streams } = rideData;
+  if (!activity) return <p>No activity data found</p>;
 
-  const time = streams?.time?.data || [];
   const watts = streams?.watts?.data || [];
   const hr = streams?.heartrate?.data || [];
   const speed = streams?.velocity_smooth?.data || [];
   const cadence = streams?.cadence?.data || [];
+  const time = streams?.time?.data || [];
   const distance = streams?.distance?.data || [];
-  const altitude = streams?.altitude?.data || [];
 
-  const ftp = 222; // your FTP
+  const ftp = 222;
 
-  // --- Derived Metrics ---
+  // --- Derived metrics ---
   const np =
     watts.length > 0
       ? Math.pow(
@@ -86,18 +94,6 @@ export default function RideDetails({ rideId }) {
       100
     : 0;
 
-  // --- Compute Gradient (%)
-  const gradient = [];
-  if (altitude.length > 1 && distance.length > 1) {
-    for (let i = 1; i < altitude.length; i++) {
-      const elevChange = altitude[i] - altitude[i - 1];
-      const distChange = distance[i] - distance[i - 1];
-      const grade = distChange > 0 ? (elevChange / distChange) * 100 : 0;
-      gradient.push(grade);
-    }
-  }
-
-  // --- Chart data ---
   const chartData = time.map((t, i) => ({
     time: (t / 60).toFixed(1),
     Power: watts[i],
@@ -105,54 +101,63 @@ export default function RideDetails({ rideId }) {
     Speed: (speed[i] || 0) * 2.23694,
   }));
 
-  const cadenceData = time.map((t, i) => ({
-    time: (t / 60).toFixed(1),
-    Cadence: cadence[i],
-  }));
-
-  const gradientData = gradient.map((g, i) => ({
-    dist: (distance[i] / 1609.34).toFixed(2),
-    Grade: g,
-  }));
-
-  // --- Zone data ---
-  const zones = { z1: 0, z2: 0, z3: 0, z4: 0, z5: 0 };
+  // --- Power zones ---
+  const zones = { Z1: 0, Z2: 0, Z3: 0, Z4: 0, Z5: 0, Z6: 0 };
   watts.forEach((w) => {
-    if (w < 0.56 * ftp) zones.z1++;
-    else if (w < 0.76 * ftp) zones.z2++;
-    else if (w < 0.91 * ftp) zones.z3++;
-    else if (w < 1.06 * ftp) zones.z4++;
-    else zones.z5++;
+    if (w < 0.56 * ftp) zones.Z1++;
+    else if (w < 0.76 * ftp) zones.Z2++;
+    else if (w < 0.91 * ftp) zones.Z3++;
+    else if (w < 1.06 * ftp) zones.Z4++;
+    else if (w < 1.21 * ftp) zones.Z5++;
+    else zones.Z6++;
   });
 
   const powerZoneData = Object.entries(zones).map(([k, v]) => ({
-    zone: k.toUpperCase(),
-    minutes: (v / 60).toFixed(1),
+    zone: k,
+    pct: watts.length ? ((v / watts.length) * 100).toFixed(1) : 0,
   }));
 
-  const hrZoneData = [
-    { zone: "Z1", bpm: avgHR * 0.6 },
-    { zone: "Z2", bpm: avgHR * 0.7 },
-    { zone: "Z3", bpm: avgHR * 0.8 },
-    { zone: "Z4", bpm: avgHR * 0.9 },
-    { zone: "Z5", bpm: avgHR },
-  ];
+  const hrZones = { Z1: 0, Z2: 0, Z3: 0, Z4: 0, Z5: 0 };
+  hr.forEach((bpm) => {
+    if (bpm < 0.6 * 200) hrZones.Z1++;
+    else if (bpm < 0.7 * 200) hrZones.Z2++;
+    else if (bpm < 0.8 * 200) hrZones.Z3++;
+    else if (bpm < 0.9 * 200) hrZones.Z4++;
+    else hrZones.Z5++;
+  });
+
+  const hrZoneData = Object.entries(hrZones).map(([k, v]) => ({
+    zone: k,
+    pct: hr.length ? ((v / hr.length) * 100).toFixed(1) : 0,
+  }));
 
   return (
     <div style={{ padding: "2rem", color: "white" }}>
-      <h2>{activity.name}</h2>
+      {/* --- Header --- */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "1rem",
+        }}
+      >
+        <h2 style={{ margin: 0 }}>{activity.name}</h2>
+        <TxtButton rideData={rideData} />
+      </div>
 
-      {/* --- Metric Cards --- */}
+      {/* --- Metrics Grid --- */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
           gap: "1rem",
           marginBottom: "2rem",
         }}
       >
         <Metric label="Distance" value={(activity.distance / 1609.34).toFixed(2)} unit="mi" />
         <Metric label="Elevation" value={activity.total_elevation_gain?.toFixed(0)} unit="ft" />
+        <Metric label="Moving Time" value={(activity.moving_time / 60).toFixed(0)} unit="min" />
         <Metric label="Avg Power" value={avgPower.toFixed(0)} unit="W" />
         <Metric label="NP" value={np.toFixed(0)} unit="W" />
         <Metric label="IF" value={IF.toFixed(2)} />
@@ -164,66 +169,38 @@ export default function RideDetails({ rideId }) {
 
       {/* --- Power / HR / Speed Chart --- */}
       <h3>Power · Heart Rate · Speed</h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={chartData}>
-          <CartesianGrid stroke="#333" />
-          <XAxis dataKey="time" label={{ value: "Time (min)", position: "insideBottom", dy: 10 }} />
-          <YAxis />
-          <Tooltip />
-          <Line type="monotone" dataKey="Power" stroke="#00bcd4" dot={false} />
-          <Line type="monotone" dataKey="HR" stroke="#ff4081" dot={false} />
-          <Line type="monotone" dataKey="Speed" stroke="#4caf50" dot={false} />
-        </LineChart>
-      </ResponsiveContainer>
+      <div
+        style={{
+          background: "#111",
+          borderRadius: "12px",
+          padding: "1rem",
+          marginBottom: "2rem",
+        }}
+      >
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={chartData}>
+            <CartesianGrid stroke="#222" />
+            <XAxis dataKey="time" tick={{ fill: "#aaa" }} />
+            <YAxis tick={{ fill: "#aaa" }} />
+            <Tooltip />
+            <Line type="monotone" dataKey="Power" stroke="#00bcd4" dot={false} />
+            <Line type="monotone" dataKey="HR" stroke="#ff4081" dot={false} />
+            <Line type="monotone" dataKey="Speed" stroke="#4caf50" dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
 
-      {/* --- Cadence Chart --- */}
-      <h3>Cadence (RPM)</h3>
-      <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={cadenceData}>
-          <CartesianGrid stroke="#333" />
-          <XAxis dataKey="time" label={{ value: "Time (min)", position: "insideBottom", dy: 10 }} />
-          <YAxis />
-          <Tooltip />
-          <Line type="monotone" dataKey="Cadence" stroke="#ffb300" dot={false} />
-        </LineChart>
-      </ResponsiveContainer>
-
-      {/* --- Gradient Chart --- */}
-      <h3>Gradient (% Slope)</h3>
-      <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={gradientData}>
-          <CartesianGrid stroke="#333" />
-          <XAxis dataKey="dist" label={{ value: "Distance (mi)", position: "insideBottom", dy: 10 }} />
-          <YAxis />
-          <Tooltip />
-          <Line type="monotone" dataKey="Grade" stroke="#9c27b0" dot={false} />
-        </LineChart>
-      </ResponsiveContainer>
-
-      {/* --- Zone Charts --- */}
-      <div style={{ display: "flex", gap: "2rem", marginTop: "2rem" }}>
-        <div style={{ flex: 1 }}>
-          <h3>Power Zones</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={powerZoneData}>
-              <XAxis dataKey="zone" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="minutes" fill="#00bcd4" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <div style={{ flex: 1 }}>
-          <h3>HR Zones</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={hrZoneData}>
-              <XAxis dataKey="zone" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="bpm" fill="#ff4081" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+      {/* --- Zones --- */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "1rem",
+          marginTop: "2rem",
+        }}
+      >
+        <ZoneChart title="Power Zones" data={powerZoneData} color="#00bcd4" />
+        <ZoneChart title="Heart Rate Zones" data={hrZoneData} color="#ff4081" />
       </div>
     </div>
   );
@@ -235,14 +212,37 @@ function Metric({ label, value, unit }) {
       style={{
         background: "#18181b",
         padding: "1rem",
-        borderRadius: "12px",
+        borderRadius: "10px",
         textAlign: "center",
+        boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
       }}
     >
       <div style={{ fontSize: "0.8rem", opacity: 0.7 }}>{label}</div>
-      <div style={{ fontSize: "1.4rem", fontWeight: "bold" }}>
+      <div style={{ fontSize: "1.3rem", fontWeight: "bold" }}>
         {value} {unit || ""}
       </div>
+    </div>
+  );
+}
+
+function ZoneChart({ title, data, color }) {
+  return (
+    <div
+      style={{
+        background: "#111",
+        borderRadius: "12px",
+        padding: "1rem",
+      }}
+    >
+      <h3 style={{ marginBottom: "1rem" }}>{title}</h3>
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart data={data}>
+          <XAxis dataKey="zone" tick={{ fill: "#aaa" }} />
+          <YAxis tick={{ fill: "#aaa" }} />
+          <Tooltip />
+          <Bar dataKey="pct" fill={color} />
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }
