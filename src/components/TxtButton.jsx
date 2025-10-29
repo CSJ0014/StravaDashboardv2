@@ -1,65 +1,98 @@
-import React from 'react'
+import React from "react";
 
-export default function PdfButton({ activity, streams }){
-  const handleDownload = () => {
-    if(!activity) return
-    const lines = []
-    const miles = (activity.distance/1609.34).toFixed(2)
-    const elev = Math.round(activity.total_elevation_gain || 0)
-    const avgHR = Math.round(activity.average_heartrate || 0)
-    const avgW = Math.round(activity.average_watts || 0)
-    const np = computeNP(streams?.watts?.data || [])
-    const drift = computeDrift(streams?.time?.data, streams?.heartrate?.data, streams?.watts?.data)
+export default function TxtButton({ rideData }) {
+  const handleExport = () => {
+    if (!rideData || !rideData.activity || !rideData.streams) {
+      alert("No ride data available for export.");
+      return;
+    }
 
-    lines.push(`# ${activity.name}`)
-    lines.push(`Date: ${activity.start_date_local || activity.start_date}`)
-    lines.push('')
-    lines.push('== Summary ==')
-    lines.push(`Distance: ${miles} mi`)
-    lines.push(`Elevation Gain: ${elev} ft`)
-    lines.push(`Moving Time (s): ${activity.moving_time}`)
-    lines.push(`Avg HR: ${avgHR} bpm`)
-    lines.push(`Avg Power: ${avgW} W`)
-    lines.push(`Normalized Power: ${np ? Math.round(np) : '—'} W`)
-    lines.push(`HR Drift: ${drift ? drift.toFixed(1) : 0}%`)
-    lines.push('')
-    lines.push('== Notes ==')
-    lines.push('- Warm-up quality, first 10 min feel.')
-    lines.push('- Cadence strategy.')
-    lines.push('- Mid-ride fueling & hydration.')
-    lines.push('- Final 15 min execution.')
-    const blob = new Blob([lines.join('\n')], {type:'text/plain'})
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = (activity.name || 'ride') + '_summary.txt'
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    URL.revokeObjectURL(url)
-  }
+    const { activity, streams } = rideData;
+    const time = streams?.time?.data || [];
+    const watts = streams?.watts?.data || [];
+    const hr = streams?.heartrate?.data || [];
+    const speed = streams?.velocity_smooth?.data || [];
+    const cadence = streams?.cadence?.data || [];
+    const distance = streams?.distance?.data || [];
+
+    // --- Compute summary metrics ---
+    const ftp = 222;
+    const np =
+      watts.length > 0
+        ? Math.pow(
+            watts
+              .map((_, i, arr) => {
+                const window = arr.slice(Math.max(0, i - 30), i);
+                const avg =
+                  window.reduce((a, b) => a + b, 0) / (window.length || 1);
+                return Math.pow(avg, 4);
+              })
+              .reduce((a, b) => a + b, 0) / watts.length,
+            0.25
+          )
+        : 0;
+
+    const avgPower = activity.average_watts || 0;
+    const avgHR = activity.average_heartrate || 0;
+    const IF = np && ftp ? np / ftp : 0;
+    const VI = avgPower ? np / avgPower : 0;
+    const durationHrs = (activity.moving_time || 0) / 3600;
+    const TSS = durationHrs * IF * IF * 100;
+    const EF = avgHR ? avgPower / avgHR : 0;
+
+    // --- Build text file content ---
+    let output = "";
+    output += `Ride Summary: ${activity.name}\n`;
+    output += `Date: ${new Date(activity.start_date_local).toLocaleString()}\n`;
+    output += `Distance: ${(activity.distance / 1609.34).toFixed(2)} mi\n`;
+    output += `Elevation Gain: ${activity.total_elevation_gain?.toFixed(0)} ft\n`;
+    output += `Duration: ${(activity.moving_time / 60).toFixed(0)} min\n`;
+    output += `Avg Power: ${avgPower.toFixed(0)} W\n`;
+    output += `NP: ${np.toFixed(0)} W\n`;
+    output += `IF: ${IF.toFixed(2)}\n`;
+    output += `VI: ${VI.toFixed(2)}\n`;
+    output += `TSS: ${TSS.toFixed(0)}\n`;
+    output += `Avg HR: ${avgHR.toFixed(0)} bpm\n`;
+    output += `EF (P/HR): ${EF.toFixed(2)}\n`;
+    output += `\n--- Stream Data ---\n`;
+    output += `time(s),power(W),heartrate(bpm),speed(mph),cadence(rpm),distance(mi)\n`;
+
+    for (let i = 0; i < time.length; i++) {
+      const line = [
+        time[i] || 0,
+        watts[i] || "",
+        hr[i] || "",
+        ((speed[i] || 0) * 2.23694).toFixed(2),
+        cadence[i] || "",
+        ((distance[i] || 0) / 1609.34).toFixed(3),
+      ].join(",");
+      output += line + "\n";
+    }
+
+    // --- Create and download file ---
+    const blob = new Blob([output], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${activity.name.replace(/[^\w\s-]/g, "_")}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
-    <button className="button" onClick={handleDownload} disabled={!activity} title="Download text summary">
+    <button
+      onClick={handleExport}
+      style={{
+        backgroundColor: "#1e1e1e",
+        color: "white",
+        padding: "8px 14px",
+        borderRadius: "8px",
+        border: "1px solid #444",
+        cursor: "pointer",
+        fontSize: "0.9rem",
+      }}
+    >
       Export Summary (.txt)
     </button>
-  )
-}
-
-function avg(arr){ const n=arr?.length||0; if(!n) return 0; return arr.reduce((a,b)=>a+(b??0),0)/n }
-function rollingMean(arr, win=30){ const out=[]; let sum=0; for(let i=0;i<arr.length;i++){ sum+=arr[i]||0; if(i>=win) sum-=arr[i-win]||0; out.push(sum/Math.min(i+1,win)); } return out }
-function computeNP(watts){
-  if(!watts?.length) return 0
-  const r = rollingMean(watts.map(w=>w||0), 30)
-  const fourth = avg(r.map(x => Math.pow(x,4)))
-  return Math.pow(fourth, 1/4)
-}
-function computeDrift(time, hr, watts){
-  if(!time?.length || !hr?.length) return 0
-  const mid = Math.floor(time.length/2)
-  const h1 = avg(hr.slice(0, mid)), h2 = avg(hr.slice(mid))
-  const w1 = avg(watts?.slice(0, mid) || []), w2 = avg(watts?.slice(mid) || [])
-  const ratio1 = w1 ? h1 / w1 : 0, ratio2 = w2 ? h2 / w2 : 0
-  if(!ratio1) return 0
-  return ((ratio2 - ratio1) / ratio1) * 100
+  );
 }
