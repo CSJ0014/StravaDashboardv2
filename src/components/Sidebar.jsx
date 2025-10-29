@@ -1,43 +1,45 @@
-import React from 'react'
-import { format } from 'date-fns'
+import React, { useEffect, useState } from "react";
 
-function metersToMiles(m){ return m / 1609.34 }
+export default function Sidebar({ onSelect }) {
+  const [rides, setRides] = useState([]);
 
-function TypeChip({ type }) {
-  const t = (type || '').toLowerCase()
-  const cls = t === 'gravelride' ? 'gravel' : t === 'virtualride' ? 'virtual' : 'ride'
-  const label = t === 'gravelride' ? 'Gravel' : t === 'virtualride' ? 'Virtual' : 'Ride'
-  return <span className={`chip ${cls}`}>{label}</span>
-}
-
-export default function Sidebar({ activities, selectedId, onSelect, loading, error }) {
-  if (loading) return <div className="card panel">Loading rides…</div>
-  if (error) return <div className="card panel" role="alert">{error}</div>
-  if (!activities?.length) return <div className="card panel empty">No activities yet. Once your Strava env vars are set on Vercel, your last rides will appear here.</div>
+  useEffect(() => {
+    fetch("/api/strava/activities")
+      .then((r) => r.json())
+      .then(setRides)
+      .catch((err) => console.error("Failed to fetch rides:", err));
+  }, []);
 
   return (
-    <div>
-      {activities.slice(0,15).map(a => {
-        const d = new Date(a.start_date_local || a.start_date)
-        const date = isNaN(d) ? '' : format(d, 'MMM d, yyyy')
-        const miles = (metersToMiles(a.distance || 0)).toFixed(1)
-        return (
-          <div
-            key={a.id}
-            className={`card ride-item ${selectedId===a.id ? 'active' : ''}`}
-            onClick={() => onSelect(a)}
-            role="button" aria-label={`Open ${a.name}`}
-          >
-            <div>
-              <div className="ride-title">{a.name || 'Untitled Ride'}</div>
-              <div className="ride-meta">{date} • {miles} mi</div>
-            </div>
-            <div className="chips">
-              <TypeChip type={a.type} />
-            </div>
-          </div>
-        )
-      })}
+    <div
+      style={{
+        width: "300px",
+        background: "#111",
+        color: "#fff",
+        overflowY: "auto",
+        padding: "1rem",
+      }}
+    >
+      <h2>Recent Rides</h2>
+      {rides.map((ride) => (
+        <div
+          key={ride.id}
+          onClick={() => onSelect(ride.id)}
+          style={{
+            padding: "0.5rem",
+            margin: "0.5rem 0",
+            border: "1px solid #333",
+            borderRadius: "8px",
+            cursor: "pointer",
+          }}
+        >
+          <strong>{ride.name}</strong>
+          <p style={{ margin: 0, fontSize: "0.8rem" }}>
+            {(ride.distance / 1609.34).toFixed(1)} mi —{" "}
+            {Math.round(ride.moving_time / 60)} min
+          </p>
+        </div>
+      ))}
     </div>
-  )
+  );
 }
