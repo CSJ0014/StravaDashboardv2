@@ -44,15 +44,17 @@ export default function RideDetails({ rideId }) {
   if (!activity) return <p>No activity data</p>;
   if (!streams) return <p>No streams data</p>;
 
-  // --- Parse streams safely
   const time = streams?.time?.data || [];
   const watts = streams?.watts?.data || [];
   const hr = streams?.heartrate?.data || [];
   const speed = streams?.velocity_smooth?.data || [];
+  const cadence = streams?.cadence?.data || [];
+  const distance = streams?.distance?.data || [];
+  const altitude = streams?.altitude?.data || [];
 
-  const ftp = 222; // user’s FTP — you can make this dynamic later
+  const ftp = 222; // your FTP
 
-  // --- Compute Normalized Power (NP)
+  // --- Derived Metrics ---
   const np =
     watts.length > 0
       ? Math.pow(
@@ -68,14 +70,11 @@ export default function RideDetails({ rideId }) {
         )
       : 0;
 
-  // --- Compute Variability Index, Intensity Factor, TSS
   const avgPower = activity.average_watts || 0;
   const durationHrs = (activity.moving_time || 0) / 3600;
   const IF = np && ftp ? np / ftp : 0;
   const VI = avgPower ? np / avgPower : 0;
   const TSS = durationHrs * IF * IF * 100;
-
-  // --- Efficiency Factor & HR Drift
   const avgHR = activity.average_heartrate || 0;
   const EF = avgHR ? avgPower / avgHR : 0;
   const hrDrift = hr.length
@@ -87,23 +86,37 @@ export default function RideDetails({ rideId }) {
       100
     : 0;
 
-  // --- Combine for line chart
+  // --- Compute Gradient (%)
+  const gradient = [];
+  if (altitude.length > 1 && distance.length > 1) {
+    for (let i = 1; i < altitude.length; i++) {
+      const elevChange = altitude[i] - altitude[i - 1];
+      const distChange = distance[i] - distance[i - 1];
+      const grade = distChange > 0 ? (elevChange / distChange) * 100 : 0;
+      gradient.push(grade);
+    }
+  }
+
+  // --- Chart data ---
   const chartData = time.map((t, i) => ({
     time: (t / 60).toFixed(1),
     Power: watts[i],
     HR: hr[i],
-    Speed: (speed[i] || 0) * 2.23694, // m/s → mph
+    Speed: (speed[i] || 0) * 2.23694,
   }));
 
-  // --- Power / HR Zone Distribution
-  const zones = {
-    z1: 0,
-    z2: 0,
-    z3: 0,
-    z4: 0,
-    z5: 0,
-  };
+  const cadenceData = time.map((t, i) => ({
+    time: (t / 60).toFixed(1),
+    Cadence: cadence[i],
+  }));
 
+  const gradientData = gradient.map((g, i) => ({
+    dist: (distance[i] / 1609.34).toFixed(2),
+    Grade: g,
+  }));
+
+  // --- Zone data ---
+  const zones = { z1: 0, z2: 0, z3: 0, z4: 0, z5: 0 };
   watts.forEach((w) => {
     if (w < 0.56 * ftp) zones.z1++;
     else if (w < 0.76 * ftp) zones.z2++;
@@ -129,6 +142,7 @@ export default function RideDetails({ rideId }) {
     <div style={{ padding: "2rem", color: "white" }}>
       <h2>{activity.name}</h2>
 
+      {/* --- Metric Cards --- */}
       <div
         style={{
           display: "grid",
@@ -148,6 +162,7 @@ export default function RideDetails({ rideId }) {
         <Metric label="HR Drift" value={`${hrDrift.toFixed(1)}%`} />
       </div>
 
+      {/* --- Power / HR / Speed Chart --- */}
       <h3>Power · Heart Rate · Speed</h3>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={chartData}>
@@ -161,6 +176,31 @@ export default function RideDetails({ rideId }) {
         </LineChart>
       </ResponsiveContainer>
 
+      {/* --- Cadence Chart --- */}
+      <h3>Cadence (RPM)</h3>
+      <ResponsiveContainer width="100%" height={200}>
+        <LineChart data={cadenceData}>
+          <CartesianGrid stroke="#333" />
+          <XAxis dataKey="time" label={{ value: "Time (min)", position: "insideBottom", dy: 10 }} />
+          <YAxis />
+          <Tooltip />
+          <Line type="monotone" dataKey="Cadence" stroke="#ffb300" dot={false} />
+        </LineChart>
+      </ResponsiveContainer>
+
+      {/* --- Gradient Chart --- */}
+      <h3>Gradient (% Slope)</h3>
+      <ResponsiveContainer width="100%" height={200}>
+        <LineChart data={gradientData}>
+          <CartesianGrid stroke="#333" />
+          <XAxis dataKey="dist" label={{ value: "Distance (mi)", position: "insideBottom", dy: 10 }} />
+          <YAxis />
+          <Tooltip />
+          <Line type="monotone" dataKey="Grade" stroke="#9c27b0" dot={false} />
+        </LineChart>
+      </ResponsiveContainer>
+
+      {/* --- Zone Charts --- */}
       <div style={{ display: "flex", gap: "2rem", marginTop: "2rem" }}>
         <div style={{ flex: 1 }}>
           <h3>Power Zones</h3>
@@ -184,10 +224,6 @@ export default function RideDetails({ rideId }) {
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </div>
-
-      <div style={{ marginTop: "2rem", opacity: 0.6 }}>
-        <p>Streams loaded: {Object.keys(streams).join(", ")}</p>
       </div>
     </div>
   );
