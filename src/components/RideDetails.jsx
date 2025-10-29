@@ -2,247 +2,170 @@ import React, { useEffect, useState } from "react";
 import {
   LineChart,
   Line,
-  CartesianGrid,
   XAxis,
   YAxis,
   Tooltip,
-  BarChart,
-  Bar,
+  Legend,
   ResponsiveContainer,
 } from "recharts";
-import TxtButton from "./TxtButton";
 
-export default function RideDetails({ rideId }) {
-  const [rideData, setRideData] = useState(null);
-  const [error, setError] = useState(null);
+export default function RideDetails({ selectedRide }) {
+  const [activity, setActivity] = useState(null);
+  const [streams, setStreams] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!rideId) return;
+    if (!selectedRide) return;
     setLoading(true);
-    fetch(`/api/strava/activity?id=${rideId}`)
-      .then((r) => r.json())
-      .then((json) => {
-        setRideData(json);
-        setLoading(false);
-      })
-      .catch((e) => {
-        setError(e.message);
-        setLoading(false);
-      });
-  }, [rideId]);
+    setError("");
 
-  if (!rideId)
+    fetch(`/api/strava/activity?id=${selectedRide.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        setActivity(data.activity);
+        setStreams(data.streams);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [selectedRide]);
+
+  if (!selectedRide)
     return (
-      <div style={{ padding: "2rem", textAlign: "center" }}>
-        <h2>Ride Dashboard</h2>
-        <p>Select a ride to view details</p>
+      <div className="p-6 text-gray-400 text-lg">
+        Select a ride to view details
       </div>
     );
 
+  if (loading) return <div className="p-6 text-gray-400">Loading...</div>;
   if (error)
     return (
-      <div style={{ padding: "2rem", color: "red" }}>
-        <p>❌ Error loading ride: {error}</p>
+      <div className="p-6 text-red-400">
+        Error loading activity: {error}
       </div>
     );
 
-  if (loading || !rideData)
-    return <div style={{ padding: "2rem" }}>Loading ride data...</div>;
+  if (!activity || !streams)
+    return (
+      <div className="p-6 text-gray-400">
+        No data available for this activity.
+      </div>
+    );
 
-  const { activity, streams } = rideData;
-  if (!activity) return <p>No activity data found</p>;
-
-  const watts = streams?.watts?.data || [];
-  const hr = streams?.heartrate?.data || [];
-  const speed = streams?.velocity_smooth?.data || [];
-  const cadence = streams?.cadence?.data || [];
-  const time = streams?.time?.data || [];
-  const distance = streams?.distance?.data || [];
-
-  const ftp = 222;
-
-  // --- Derived metrics ---
-  const np =
-    watts.length > 0
-      ? Math.pow(
-          watts
-            .map((_, i, arr) => {
-              const window = arr.slice(Math.max(0, i - 30), i);
-              const avg =
-                window.reduce((a, b) => a + b, 0) / (window.length || 1);
-              return Math.pow(avg, 4);
-            })
-            .reduce((a, b) => a + b, 0) / watts.length,
-          0.25
-        )
-      : 0;
-
-  const avgPower = activity.average_watts || 0;
-  const durationHrs = (activity.moving_time || 0) / 3600;
-  const IF = np && ftp ? np / ftp : 0;
-  const VI = avgPower ? np / avgPower : 0;
-  const TSS = durationHrs * IF * IF * 100;
-  const avgHR = activity.average_heartrate || 0;
-  const EF = avgHR ? avgPower / avgHR : 0;
-  const hrDrift = hr.length
-    ? ((hr.slice(-Math.floor(hr.length / 2)).reduce((a, b) => a + b, 0) /
-        (hr.length / 2)) /
-        (hr.slice(0, Math.floor(hr.length / 2)).reduce((a, b) => a + b, 0) /
-          (hr.length / 2)) -
-        1) *
-      100
-    : 0;
-
+  // Prepare data for charts
+  const time = streams.time?.data || [];
+  const watts = streams.watts?.data || [];
+  const hr = streams.heartrate?.data || [];
+  const speed = streams.velocity_smooth?.data || [];
   const chartData = time.map((t, i) => ({
-    time: (t / 60).toFixed(1),
-    Power: watts[i],
-    HR: hr[i],
-    Speed: (speed[i] || 0) * 2.23694,
+    time: t,
+    watts: watts[i] || 0,
+    hr: hr[i] || 0,
+    speed: speed[i] ? (speed[i] * 2.23694).toFixed(1) : 0, // m/s → mph
   }));
 
-  // --- Power zones ---
-  const zones = { Z1: 0, Z2: 0, Z3: 0, Z4: 0, Z5: 0, Z6: 0 };
-  watts.forEach((w) => {
-    if (w < 0.56 * ftp) zones.Z1++;
-    else if (w < 0.76 * ftp) zones.Z2++;
-    else if (w < 0.91 * ftp) zones.Z3++;
-    else if (w < 1.06 * ftp) zones.Z4++;
-    else if (w < 1.21 * ftp) zones.Z5++;
-    else zones.Z6++;
-  });
-
-  const powerZoneData = Object.entries(zones).map(([k, v]) => ({
-    zone: k,
-    pct: watts.length ? ((v / watts.length) * 100).toFixed(1) : 0,
-  }));
-
-  const hrZones = { Z1: 0, Z2: 0, Z3: 0, Z4: 0, Z5: 0 };
-  hr.forEach((bpm) => {
-    if (bpm < 0.6 * 200) hrZones.Z1++;
-    else if (bpm < 0.7 * 200) hrZones.Z2++;
-    else if (bpm < 0.8 * 200) hrZones.Z3++;
-    else if (bpm < 0.9 * 200) hrZones.Z4++;
-    else hrZones.Z5++;
-  });
-
-  const hrZoneData = Object.entries(hrZones).map(([k, v]) => ({
-    zone: k,
-    pct: hr.length ? ((v / hr.length) * 100).toFixed(1) : 0,
-  }));
+  const avgPower = activity.average_watts?.toFixed(0);
+  const avgHR = activity.average_heartrate?.toFixed(0);
+  const distance = (activity.distance / 1609.34).toFixed(2);
+  const elevation = activity.total_elevation_gain.toFixed(0);
+  const movingTime = Math.round(activity.moving_time / 60);
 
   return (
-    <div style={{ padding: "2rem", color: "white" }}>
-      {/* --- Header --- */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "1rem",
-        }}
-      >
-        <h2 style={{ margin: 0 }}>{activity.name}</h2>
-        <TxtButton rideData={rideData} />
+    <div className="p-6 space-y-6 text-gray-200">
+      <h2 className="text-2xl font-semibold mb-2">
+        {activity.name}
+      </h2>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+        {[
+          { label: "Distance", value: `${distance} mi` },
+          { label: "Elevation", value: `${elevation} ft` },
+          { label: "Moving Time", value: `${movingTime} min` },
+          { label: "Avg HR", value: `${avgHR} bpm` },
+          { label: "Avg Power", value: `${avgPower} W` },
+          { label: "Normalized Power", value: `${activity.weighted_average_watts || "--"} W` },
+        ].map((m) => (
+          <div
+            key={m.label}
+            className="bg-[#1c1d20] rounded-2xl p-4 text-center shadow-md border border-gray-700/50"
+          >
+            <div className="text-sm text-gray-400">{m.label}</div>
+            <div className="text-xl font-semibold text-white">{m.value}</div>
+          </div>
+        ))}
       </div>
 
-      {/* --- Metrics Grid --- */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: "1rem",
-          marginBottom: "2rem",
-        }}
-      >
-        <Metric label="Distance" value={(activity.distance / 1609.34).toFixed(2)} unit="mi" />
-        <Metric label="Elevation" value={activity.total_elevation_gain?.toFixed(0)} unit="ft" />
-        <Metric label="Moving Time" value={(activity.moving_time / 60).toFixed(0)} unit="min" />
-        <Metric label="Avg Power" value={avgPower.toFixed(0)} unit="W" />
-        <Metric label="NP" value={np.toFixed(0)} unit="W" />
-        <Metric label="IF" value={IF.toFixed(2)} />
-        <Metric label="VI" value={VI.toFixed(2)} />
-        <Metric label="TSS" value={TSS.toFixed(0)} />
-        <Metric label="EF" value={EF.toFixed(2)} />
-        <Metric label="HR Drift" value={`${hrDrift.toFixed(1)}%`} />
+      {/* Power / HR / Speed Chart */}
+      <div className="bg-[#1c1d20] p-6 rounded-2xl shadow-md border border-gray-700/50">
+        <h3 className="text-lg font-medium mb-3 text-gray-300">
+          Power • Heart Rate • Speed
+        </h3>
+        {chartData.length > 0 ? (
+          <ResponsiveContainer width="100%" height={320}>
+            <LineChart data={chartData}>
+              <XAxis dataKey="time" tick={false} />
+              <YAxis yAxisId="left" />
+              <YAxis yAxisId="right" orientation="right" />
+              <Tooltip />
+              <Legend />
+              <Line
+                yAxisId="left"
+                type="monotone"
+                dataKey="watts"
+                stroke="#4FC3F7"
+                strokeWidth={2}
+                dot={false}
+                name="Power (W)"
+              />
+              <Line
+                yAxisId="left"
+                type="monotone"
+                dataKey="hr"
+                stroke="#F06292"
+                strokeWidth={1.8}
+                dot={false}
+                name="Heart Rate (bpm)"
+              />
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="speed"
+                stroke="#81C784"
+                strokeWidth={1.8}
+                dot={false}
+                name="Speed (mph)"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="text-gray-500 text-sm">
+            No stream data available.
+          </div>
+        )}
       </div>
 
-      {/* --- Power / HR / Speed Chart --- */}
-      <h3>Power · Heart Rate · Speed</h3>
-      <div
-        style={{
-          background: "#111",
-          borderRadius: "12px",
-          padding: "1rem",
-          marginBottom: "2rem",
-        }}
-      >
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={chartData}>
-            <CartesianGrid stroke="#222" />
-            <XAxis dataKey="time" tick={{ fill: "#aaa" }} />
-            <YAxis tick={{ fill: "#aaa" }} />
-            <Tooltip />
-            <Line type="monotone" dataKey="Power" stroke="#00bcd4" dot={false} />
-            <Line type="monotone" dataKey="HR" stroke="#ff4081" dot={false} />
-            <Line type="monotone" dataKey="Speed" stroke="#4caf50" dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
+      {/* Power & HR Zones */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="bg-[#1c1d20] p-4 rounded-2xl border border-gray-700/50 shadow-md">
+          <h3 className="text-lg font-medium text-gray-300 mb-2">Power Zones</h3>
+          <div className="text-gray-500 text-sm">
+            {streams.watts ? "Power data loaded" : "No data available"}
+          </div>
+        </div>
+        <div className="bg-[#1c1d20] p-4 rounded-2xl border border-gray-700/50 shadow-md">
+          <h3 className="text-lg font-medium text-gray-300 mb-2">HR Zones</h3>
+          <div className="text-gray-500 text-sm">
+            {streams.heartrate ? "Heart rate data loaded" : "No data available"}
+          </div>
+        </div>
       </div>
 
-      {/* --- Zones --- */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "1rem",
-          marginTop: "2rem",
-        }}
-      >
-        <ZoneChart title="Power Zones" data={powerZoneData} color="#00bcd4" />
-        <ZoneChart title="Heart Rate Zones" data={hrZoneData} color="#ff4081" />
+      {/* Debug Info */}
+      <div className="text-xs text-gray-600 pt-4 border-t border-gray-700/30">
+        Data via Strava API • {chartData.length} samples loaded
       </div>
-    </div>
-  );
-}
-
-function Metric({ label, value, unit }) {
-  return (
-    <div
-      style={{
-        background: "#18181b",
-        padding: "1rem",
-        borderRadius: "10px",
-        textAlign: "center",
-        boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
-      }}
-    >
-      <div style={{ fontSize: "0.8rem", opacity: 0.7 }}>{label}</div>
-      <div style={{ fontSize: "1.3rem", fontWeight: "bold" }}>
-        {value} {unit || ""}
-      </div>
-    </div>
-  );
-}
-
-function ZoneChart({ title, data, color }) {
-  return (
-    <div
-      style={{
-        background: "#111",
-        borderRadius: "12px",
-        padding: "1rem",
-      }}
-    >
-      <h3 style={{ marginBottom: "1rem" }}>{title}</h3>
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={data}>
-          <XAxis dataKey="zone" tick={{ fill: "#aaa" }} />
-          <YAxis tick={{ fill: "#aaa" }} />
-          <Tooltip />
-          <Bar dataKey="pct" fill={color} />
-        </BarChart>
-      </ResponsiveContainer>
     </div>
   );
 }
