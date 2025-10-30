@@ -13,7 +13,7 @@ export default function App() {
   useEffect(() => {
     async function loadActivities() {
       try {
-        const res = await fetch("/api/activities?per_page=15");
+        const res = await fetch("/api/strava/activities?per_page=15");
         const data = await res.json();
         setActivities(data || []);
       } catch (err) {
