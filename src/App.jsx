@@ -7,67 +7,67 @@ import "./styles.css";
 export default function App() {
   const [activities, setActivities] = useState([]);
   const [selectedActivity, setSelectedActivity] = useState(null);
-  const [activityData, setActivityData] = useState(null);
+  const [streams, setStreams] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // === Load Recent Activities ===
+  // === FETCH RECENT ACTIVITIES ===
   useEffect(() => {
     async function loadActivities() {
       try {
         const res = await fetch("/api/strava/activities?per_page=15");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        setActivities(data || []);
+        console.log("Fetched activities:", data);
+
+        // Handle both possible formats from backend
+        setActivities(data.activities || data || []);
       } catch (err) {
-        console.error("Failed to load activities:", err);
+        console.error("Failed to fetch activities:", err);
+      } finally {
+        setLoading(false);
       }
     }
     loadActivities();
   }, []);
 
-  // === Load Selected Activity ===
-  const handleSelect = async (activity) => {
+  // === LOAD SELECTED ACTIVITY DETAILS ===
+  const loadActivityDetails = async (activity) => {
     setSelectedActivity(activity);
+    setStreams(null);
     try {
-      const res = await fetch(`/api/activity/${activity.id}`);
+      const res = await fetch(`/api/strava/activity?id=${activity.id}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
+      console.log("Fetched activity details:", data);
 
-      if (data.error) throw new Error(data.error);
-
-      // Normalize the object so RideDetails always receives consistent keys
-      setActivityData({
-        details: data.activity,
-        series: data.streams,
-        metrics: {},
-        zones: {},
-      });
+      // Save combined activity + streams data
+      setStreams(data.streams || {});
     } catch (err) {
       console.error("Error loading activity details:", err);
-      setActivityData(null);
     }
   };
 
   return (
     <div className="app">
+      {/* === TOP HEADER === */}
       <Header />
+
+      {/* === MAIN SECTION === */}
       <div className="main">
+        {/* === SIDEBAR === */}
         <Sidebar
           activities={activities}
           selectedId={selectedActivity?.id}
-          onSelect={handleSelect}
+          onSelect={loadActivityDetails}
+          loading={loading}
         />
+
+        {/* === DASHBOARD CONTENT === */}
         <div className="content">
-          {selectedActivity && activityData ? (
-            <RideDetails
-              activity={selectedActivity}
-              details={activityData.details}
-              series={activityData.series}
-              metrics={activityData.metrics}
-              zones={activityData.zones}
-            />
-          ) : (
-            <div className="card">
-              <p>Select a ride from the sidebar to view details.</p>
-            </div>
-          )}
+          <RideDetails
+            activity={selectedActivity}
+            streams={streams}
+          />
         </div>
       </div>
     </div>
