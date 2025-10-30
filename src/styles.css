@@ -18,6 +18,18 @@
   --chartGrid: #222;
 }
 
+/* Content layout fix */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* Chart visibility fix */
+.recharts-surface {
+  background: transparent !important;
+}
+
 /* === Base Layout === */
 
 body {
