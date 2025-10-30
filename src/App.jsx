@@ -1,16 +1,18 @@
 import React, { useState } from "react";
+import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import RideDetails from "./components/RideDetails";
 
 export default function App() {
-  const [selectedRide, setSelectedRide] = useState(null);
+  const [rideId, setRideId] = useState(null);
 
   return (
-    <div className="app" style={{ display: "flex", height: "100vh" }}>
-      <Sidebar onSelect={(id) => setSelectedRide(id)} />
-      <div style={{ flex: 1, overflowY: "auto" }}>
-        <RideDetails rideId={selectedRide} />
-      </div>
+    <div className="app">
+      <Header />
+      <Sidebar onSelect={(id) => setRideId(id)} />
+      <main className="main">
+        <RideDetails rideId={rideId} />
+      </main>
     </div>
   );
 }
