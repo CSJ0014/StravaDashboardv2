@@ -32,19 +32,52 @@ body {
   background: var(--bg);
 }
 
-/* === Header === */
+/* === Top Header Bar === */
 .header {
-  background: linear-gradient(180deg, #101016, #0a0a0e);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: var(--outer-shadow);
-  text-shadow: 0 0 6px rgba(0, 191, 255, 0.3);
-  color: var(--text);
-  padding: 16px 24px;
-  font-weight: 600;
-  letter-spacing: 0.4px;
   position: sticky;
   top: 0;
-  z-index: 10;
+  width: 100%;
+  height: 68px;
+  background: linear-gradient(90deg, #0e0e12, #12121a 70%);
+  border-bottom: 1px solid rgba(0, 191, 255, 0.1);
+  box-shadow:
+    0 4px 20px rgba(0, 191, 255, 0.12),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-content {
+  width: 95%;
+  max-width: 1400px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #eaeaea;
+  text-shadow: 0 0 8px rgba(0, 191, 255, 0.4);
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.header-links a {
+  color: #00bfff;
+  text-decoration: none;
+  font-size: 14px;
+  margin-left: 24px;
+  transition: all 0.2s ease;
+  text-shadow: 0 0 6px rgba(0, 191, 255, 0.25);
+}
+
+.header-links a:hover {
+  color: #8ef0ff;
+  text-shadow: 0 0 10px rgba(0, 191, 255, 0.6);
 }
 
 /* === Sidebar === */
