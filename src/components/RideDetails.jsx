@@ -12,6 +12,7 @@ import {
   Legend,
 } from "recharts";
 import TxtButton from "./TxtButton.jsx";
+import "../styles.css";
 
 export default function RideDetails({ activity, streams }) {
   if (!activity)
@@ -32,7 +33,7 @@ export default function RideDetails({ activity, streams }) {
   const chartData = useMemo(() => {
     if (!time.length) return [];
     return time.map((t, i) => ({
-      time: (t / 60).toFixed(1), // convert seconds → minutes
+      time: (t / 60).toFixed(1),
       Power: watts[i] || null,
       HR: hr[i] || null,
       Speed: speed[i] ? (speed[i] * 2.237).toFixed(1) : null,
@@ -74,125 +75,163 @@ export default function RideDetails({ activity, streams }) {
     [180, 999],
   ]);
 
-  // === Chart colors ===
+  // === Chart colors (use theme vars) ===
   const colors = {
-    Power: "#00bfff",
-    HR: "#ff7e87",
-    Speed: "#7aff8f",
+    Power: "var(--accent-primary)",
+    HR: "var(--accent-red)",
+    Speed: "var(--accent-blue)",
   };
 
   return (
-    <div className="ride-details">
-      {/* === Header === */}
-      <div className="card">
-        <div className="header-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ color: "#eaeaea", textShadow: "0 0 8px rgba(0,191,255,0.3)" }}>
-            {activity.name}
-          </h2>
-          <TxtButton rideData={{ activity, streams: s }} />
+    <div className="content">
+      <div className="ride-details">
+        {/* === Ride Summary === */}
+        <div className="card">
+          <div className="header-row">
+            <h2 className="ride-title">{activity.name}</h2>
+            <TxtButton rideData={{ activity, streams: s }} />
+          </div>
+
+          <div className="stats-row">
+            <div className="stat">
+              <h4>Distance</h4>
+              <div>{(activity.distance / 1609).toFixed(2)} mi</div>
+            </div>
+            <div className="stat">
+              <h4>Elevation</h4>
+              <div>{activity.total_elevation_gain.toFixed(0)} ft</div>
+            </div>
+            <div className="stat">
+              <h4>Moving Time</h4>
+              <div>{Math.round(activity.moving_time / 60)} min</div>
+            </div>
+            <div className="stat">
+              <h4>Avg HR</h4>
+              <div>{activity.average_heartrate?.toFixed(0) || "-"} bpm</div>
+            </div>
+            <div className="stat">
+              <h4>Avg Power</h4>
+              <div>{activity.average_watts?.toFixed(0) || "-"} W</div>
+            </div>
+            <div className="stat">
+              <h4>Normalized Power</h4>
+              <div>
+                {(
+                  activity.normalized_power ??
+                  activity.weighted_average_watts ??
+                  null
+                )?.toFixed?.(0) || "-"}{" "}
+                W
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* === Stats === */}
-        <div className="stats-row">
-          <div className="stat"><h4>Distance</h4><div>{(activity.distance / 1609).toFixed(2)} mi</div></div>
-          <div className="stat"><h4>Elevation</h4><div>{activity.total_elevation_gain.toFixed(0)} ft</div></div>
-          <div className="stat"><h4>Moving Time</h4><div>{Math.round(activity.moving_time / 60)} min</div></div>
-          <div className="stat"><h4>Avg HR</h4><div>{activity.average_heartrate?.toFixed(0) || "-"} bpm</div></div>
-          <div className="stat"><h4>Avg Power</h4><div>{activity.average_watts?.toFixed(0) || "-"} W</div></div>
-          <div className="stat"><h4>Normalized Power</h4><div>{(activity.normalized_power ?? activity.weighted_average_watts ?? null)?.toFixed?.(0) || "-"} W</div></div>
-        </div>
-      </div>
-
-      {/* === Combined Chart === */}
-      <div className="card" style={{ background: "#111", height: 360 }}>
-        <h3 style={{ marginBottom: 12, color: "#8ef0ff" }}>
-          Power • Heart Rate • Speed
-        </h3>
-        {chartData.length ? (
-          <ResponsiveContainer width="100%" height="90%">
-            <LineChart data={chartData}>
-              <CartesianGrid stroke="rgba(0,191,255,0.05)" />
-              <XAxis
-                dataKey="time"
-                tick={{ fill: "#999", fontSize: 11 }}
-                label={{
-                  value: "Minutes",
-                  fill: "#777",
-                  position: "insideBottomRight",
-                  offset: -8,
-                }}
-              />
-              <YAxis tick={{ fill: "#999", fontSize: 11 }} />
-              <Tooltip
-                contentStyle={{
-                  background: "#0f0f12",
-                  border: "1px solid rgba(0,191,255,0.2)",
-                  borderRadius: "8px",
-                }}
-                labelStyle={{ color: "#00bfff" }}
-              />
-              <Legend />
-              <Line type="monotone" dataKey="Power" stroke={colors.Power} strokeWidth={1.8} dot={false} />
-              <Line type="monotone" dataKey="HR" stroke={colors.HR} strokeWidth={1.5} dot={false} />
-              <Line type="monotone" dataKey="Speed" stroke={colors.Speed} strokeWidth={1.5} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        ) : (
-          <p style={{ color: "#777", padding: "24px" }}>No stream data available.</p>
-        )}
-      </div>
-
-      {/* === Zone Charts === */}
-      <div className="zones-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        <div className="card" style={{ background: "#111" }}>
-          <h3 style={{ color: "#8ef0ff" }}>Power Zones</h3>
-          {powerZones.length ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={powerZones}>
-                <XAxis dataKey="zone" tick={{ fill: "#aaa" }} />
-                <YAxis tick={{ fill: "#aaa" }} />
+        {/* === Main Chart === */}
+        <div className="card chart-container">
+          <h3>Power • Heart Rate • Speed</h3>
+          {chartData.length ? (
+            <ResponsiveContainer width="100%" height={320}>
+              <LineChart data={chartData}>
+                <CartesianGrid stroke="rgba(255,255,255,0.05)" />
+                <XAxis
+                  dataKey="time"
+                  tick={{ fill: "var(--neutral-400)", fontSize: 11 }}
+                  label={{
+                    value: "Minutes",
+                    fill: "var(--neutral-500)",
+                    position: "insideBottomRight",
+                    offset: -8,
+                  }}
+                />
+                <YAxis tick={{ fill: "var(--neutral-400)", fontSize: 11 }} />
                 <Tooltip
                   contentStyle={{
-                    background: "#0f0f12",
-                    border: "1px solid rgba(0,191,255,0.2)",
+                    background: "rgba(16,25,53,0.95)",
+                    border: "1px solid var(--accent-primary)",
                     borderRadius: "8px",
                   }}
-                  labelStyle={{ color: "#00bfff" }}
+                  labelStyle={{ color: "var(--accent-primary)" }}
                 />
-                <Bar dataKey="pct" fill={colors.Power} />
-              </BarChart>
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="Power"
+                  stroke={colors.Power}
+                  strokeWidth={1.8}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="HR"
+                  stroke={colors.HR}
+                  strokeWidth={1.5}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Speed"
+                  stroke={colors.Speed}
+                  strokeWidth={1.5}
+                  dot={false}
+                />
+              </LineChart>
             </ResponsiveContainer>
           ) : (
-            <p style={{ color: "#777" }}>Power data not available</p>
+            <p>No stream data available.</p>
           )}
         </div>
 
-        <div className="card" style={{ background: "#111" }}>
-          <h3 style={{ color: "#8ef0ff" }}>Heart Rate Zones</h3>
-          {hrZones.length ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={hrZones}>
-                <XAxis dataKey="zone" tick={{ fill: "#aaa" }} />
-                <YAxis tick={{ fill: "#aaa" }} />
-                <Tooltip
-                  contentStyle={{
-                    background: "#0f0f12",
-                    border: "1px solid rgba(255,126,135,0.2)",
-                    borderRadius: "8px",
-                  }}
-                  labelStyle={{ color: "#ff7e87" }}
-                />
-                <Bar dataKey="pct" fill={colors.HR} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <p style={{ color: "#777" }}>HR data not available</p>
-          )}
-        </div>
-      </div>
+        {/* === Zone Charts === */}
+        <div className="zones-row">
+          <div className="card">
+            <h3>Power Zones</h3>
+            {powerZones.length ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={powerZones}>
+                  <XAxis dataKey="zone" tick={{ fill: "var(--neutral-400)" }} />
+                  <YAxis tick={{ fill: "var(--neutral-400)" }} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "rgba(16,25,53,0.95)",
+                      border: "1px solid var(--accent-primary)",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Bar dataKey="pct" fill={colors.Power} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p>Power data not available</p>
+            )}
+          </div>
 
-      <div className="footer-note">
-        Data via Strava API • Powered by your Cycling Dashboard
+          <div className="card">
+            <h3>Heart Rate Zones</h3>
+            {hrZones.length ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={hrZones}>
+                  <XAxis dataKey="zone" tick={{ fill: "var(--neutral-400)" }} />
+                  <YAxis tick={{ fill: "var(--neutral-400)" }} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "rgba(16,25,53,0.95)",
+                      border: "1px solid var(--accent-red)",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Bar dataKey="pct" fill={colors.HR} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p>HR data not available</p>
+            )}
+          </div>
+        </div>
+
+        <div className="footer-note">
+          Data via Strava API • Powered by your Cycling Dashboard
+        </div>
       </div>
     </div>
   );
