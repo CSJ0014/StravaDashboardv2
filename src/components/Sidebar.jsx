@@ -2,44 +2,44 @@ import React, { useEffect, useState } from "react";
 
 export default function Sidebar({ onSelect }) {
   const [rides, setRides] = useState([]);
+  const [activeId, setActiveId] = useState(null);
 
   useEffect(() => {
     fetch("/api/strava/activities")
       .then((r) => r.json())
-      .then(setRides)
+      .then((data) => setRides(Array.isArray(data) ? data.slice(0, 15) : []))
       .catch((err) => console.error("Failed to fetch rides:", err));
   }, []);
 
+  const chipClass = (type) =>
+    type === "Ride" ? "chip ride" :
+    type === "GravelRide" ? "chip gravel" :
+    "chip virtual";
+
   return (
-    <div
-      style={{
-        width: "300px",
-        background: "#111",
-        color: "#fff",
-        overflowY: "auto",
-        padding: "1rem",
-      }}
-    >
-      <h2>Recent Rides</h2>
+    <aside className="sidebar">
+      <h2 style={{ margin: 0 }}>Recent Rides</h2>
       {rides.map((ride) => (
         <div
           key={ride.id}
-          onClick={() => onSelect(ride.id)}
-          style={{
-            padding: "0.5rem",
-            margin: "0.5rem 0",
-            border: "1px solid #333",
-            borderRadius: "8px",
-            cursor: "pointer",
-          }}
+          className={`card ride-item ${activeId === ride.id ? "active" : ""}`}
+          onClick={() => { setActiveId(ride.id); onSelect(ride.id); }}
+          role="button"
+          tabIndex={0}
         >
-          <strong>{ride.name}</strong>
-          <p style={{ margin: 0, fontSize: "0.8rem" }}>
-            {(ride.distance / 1609.34).toFixed(1)} mi —{" "}
-            {Math.round(ride.moving_time / 60)} min
-          </p>
+          <div>
+            <div className="ride-title">{ride.name}</div>
+            <div className="ride-meta">
+              {(ride.distance / 1609.34).toFixed(1)} mi — {Math.round(ride.moving_time / 60)} min
+            </div>
+          </div>
+          <div className="chips">
+            <span className={chipClass(ride.type)}>
+              {ride.type === "VirtualRide" ? "Virtual" : ride.type === "GravelRide" ? "Gravel" : "Ride"}
+            </span>
+          </div>
         </div>
       ))}
-    </div>
+    </aside>
   );
 }
