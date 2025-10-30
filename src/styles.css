@@ -22,7 +22,7 @@
 
 /* === Base Layout === */
 html, body {
-  margin: 0;
+  margin: 10px;
   padding: 10px;
   background: var(--neutral-800);
   color: var(--neutral-400);
