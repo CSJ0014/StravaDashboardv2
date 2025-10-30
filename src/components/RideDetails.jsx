@@ -15,7 +15,7 @@ export default function RideDetails({ activity, streams }) {
       <div className="empty">
         <p>Select a ride to view details</p>
         <p className="footer-note">
-          Data via Strava API. This is a personal training dashboard.
+          Data provided via Strava API — part of your personal training dashboard.
         </p>
       </div>
     );
@@ -32,26 +32,32 @@ export default function RideDetails({ activity, streams }) {
     });
   };
 
+  // === Correct stream mapping (no .data bug) ===
+  const time = streams?.time || [];
+  const watts = streams?.watts || [];
+  const hr = streams?.heartrate || [];
+  const speed = streams?.velocity_smooth || [];
+
   // === Build combined chart data ===
   const chartData = useMemo(() => {
-    if (!streams || !streams.time) return [];
-    const smoothedWatts = smoothArray(streams.watts, 5);
-    const smoothedHR = smoothArray(streams.heartrate, 5);
+    if (!time.length) return [];
+    const smoothedWatts = smoothArray(watts, 5);
+    const smoothedHR = smoothArray(hr, 5);
     const smoothedSpeed = smoothArray(
-      streams.velocity_smooth?.map((v) => v * 2.23694),
+      speed.map((v) => v * 2.23694), // convert m/s → mph
       5
     );
-    return streams.time.map((t, i) => ({
-      time: (t / 60).toFixed(1),
+    return time.map((t, i) => ({
+      time: (t / 60).toFixed(1), // minutes
       watts: smoothedWatts[i] || 0,
       hr: smoothedHR[i] || 0,
       speed: smoothedSpeed[i] || 0,
     }));
-  }, [streams]);
+  }, [time, watts, hr, speed]);
 
   return (
     <div className="main">
-      {/* === Header === */}
+      {/* === Ride Header === */}
       <h2 style={{ marginBottom: 20 }}>{activity.name}</h2>
 
       {/* === Stats row === */}
@@ -61,7 +67,7 @@ export default function RideDetails({ activity, streams }) {
           <div>{(activity.distance / 1609.34).toFixed(2)} mi</div>
         </div>
         <div className="stat">
-          <h4>Elevation</h4>
+          <h4>Elevation Gain</h4>
           <div>{activity.total_elevation_gain?.toFixed(0)} ft</div>
         </div>
         <div className="stat">
@@ -77,12 +83,12 @@ export default function RideDetails({ activity, streams }) {
           <div>{activity.average_watts?.toFixed(0) || "-"} W</div>
         </div>
         <div className="stat">
-          <h4>Normalized Power</h4>
+          <h4>Norm Power</h4>
           <div>{activity.weighted_average_watts?.toFixed(0) || "-"} W</div>
         </div>
       </div>
 
-      {/* === Combined Chart === */}
+      {/* === Combined Power / HR / Speed Chart === */}
       {chartData.length > 0 ? (
         <div className="card" style={{ height: 340, marginTop: 32 }}>
           <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 12 }}>
@@ -166,7 +172,7 @@ export default function RideDetails({ activity, streams }) {
         </div>
       )}
 
-      {/* === Power & HR Zones === */}
+      {/* === Placeholder for zone cards === */}
       <div
         className="zones-row"
         style={{
@@ -181,7 +187,7 @@ export default function RideDetails({ activity, streams }) {
           <p>Power data loaded</p>
         </div>
         <div className="card">
-          <h3>HR Zones</h3>
+          <h3>Heart Rate Zones</h3>
           <p>Heart rate data loaded</p>
         </div>
       </div>
