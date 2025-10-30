@@ -32,11 +32,11 @@ export default function RideDetails({ activity, streams }) {
     });
   };
 
-  // === Correct stream mapping (no .data bug) ===
-  const time = streams?.time || [];
-  const watts = streams?.watts || [];
-  const hr = streams?.heartrate || [];
-  const speed = streams?.velocity_smooth || [];
+  // === Correct stream mapping (with .data restored) ===
+  const time = streams?.time?.data || [];
+  const watts = streams?.watts?.data || [];
+  const hr = streams?.heartrate?.data || [];
+  const speed = streams?.velocity_smooth?.data || [];
 
   // === Build combined chart data ===
   const chartData = useMemo(() => {
@@ -44,11 +44,11 @@ export default function RideDetails({ activity, streams }) {
     const smoothedWatts = smoothArray(watts, 5);
     const smoothedHR = smoothArray(hr, 5);
     const smoothedSpeed = smoothArray(
-      speed.map((v) => v * 2.23694), // convert m/s → mph
+      speed.map((v) => v * 2.23694),
       5
     );
     return time.map((t, i) => ({
-      time: (t / 60).toFixed(1), // minutes
+      time: (t / 60).toFixed(1),
       watts: smoothedWatts[i] || 0,
       hr: smoothedHR[i] || 0,
       speed: smoothedSpeed[i] || 0,
@@ -60,7 +60,7 @@ export default function RideDetails({ activity, streams }) {
       {/* === Ride Header === */}
       <h2 style={{ marginBottom: 20 }}>{activity.name}</h2>
 
-      {/* === Stats row === */}
+      {/* === Stats Row === */}
       <div className="stats-row">
         <div className="stat">
           <h4>Distance</h4>
@@ -88,9 +88,9 @@ export default function RideDetails({ activity, streams }) {
         </div>
       </div>
 
-      {/* === Combined Power / HR / Speed Chart === */}
+      {/* === Combined Chart === */}
       {chartData.length > 0 ? (
-        <div className="card" style={{ height: 340, marginTop: 32 }}>
+        <div className="card" style={{ height: 340, marginTop: 16 }}>
           <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 12 }}>
             Power • Heart Rate • Speed
           </h3>
@@ -167,19 +167,19 @@ export default function RideDetails({ activity, streams }) {
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="card empty" style={{ height: 220, marginTop: 32 }}>
+        <div className="card empty" style={{ height: 220, marginTop: 16 }}>
           <p>Waiting for Strava stream data...</p>
         </div>
       )}
 
-      {/* === Placeholder for zone cards === */}
+      {/* === Zones Row === */}
       <div
         className="zones-row"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: 16,
-          marginTop: 32,
+          marginTop: 16,
         }}
       >
         <div className="card">
