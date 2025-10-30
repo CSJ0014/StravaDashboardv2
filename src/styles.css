@@ -1,51 +1,196 @@
+/* === Dark Glowing Dashboard Theme === */
+/* Version: Streamlined + Neon Dashboard Style */
+
 :root {
   --bg: #0c0c0f;
+  --surface: #141418;
   --card: #16161a;
   --accent: #00bfff;
   --accent2: #ff4f4f;
-  --muted: #777;
-  --text: #e6e6e6;
+  --muted: #888;
+  --text: #eaeaea;
   --radius: 10px;
-  --shadow: 0 0 8px rgba(0, 191, 255, 0.2);
+  --shadow: 0 0 12px rgba(0, 191, 255, 0.15);
+  --shadow-strong: 0 0 18px rgba(0, 191, 255, 0.35);
   --chipRide: #006eff;
   --chipGravel: #7aff8f;
   --chipVirtual: #ff7e87;
+  --chartGrid: #222;
 }
+
+/* === Base Layout === */
 
 body {
   background: var(--bg);
   color: var(--text);
+  font-family: "Inter", system-ui, sans-serif;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden;
 }
 
-.card {
-  background: #16161a;
-  border: 1px solid rgba(255,255,255,0.05);
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.main {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* === Header === */
+.header {
+  background: #111115;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  padding: 16px 24px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  box-shadow: 0 0 6px rgba(0, 191, 255, 0.25);
+  text-shadow: 0 0 8px rgba(0, 191, 255, 0.25);
+}
+
+/* === Sidebar === */
+.sidebar {
+  width: 280px;
+  background: #101014;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  overflow-y: auto;
+  box-shadow: inset -2px 0 6px rgba(0, 0, 0, 0.4);
+}
+
+.sidebar h2 {
+  font-size: 18px;
+  color: var(--accent);
+  margin-top: 0;
+  margin-bottom: 16px;
+  text-shadow: 0 0 6px rgba(0, 191, 255, 0.25);
+}
+
+/* Ride list items */
+.ride-item {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: var(--radius);
-  box-shadow: 0 0 12px rgba(0,191,255,0.06);
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.ride-item:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(0, 191, 255, 0.3);
+}
+.ride-item.active {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-strong);
+  background: linear-gradient(180deg, #1b1b20, #101014);
 }
 
+/* === Cards & Panels === */
+.card {
+  background: var(--card);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  margin-bottom: 20px;
+  transition: all 0.2s ease;
+}
+.card:hover {
+  box-shadow: var(--shadow-strong);
+}
+
+/* === Charts === */
+.chart-container {
+  background: #111;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 8px rgba(0, 191, 255, 0.08);
+  padding: 16px;
+  margin-bottom: 24px;
+}
+.recharts-cartesian-grid line {
+  stroke: var(--chartGrid);
+}
+.recharts-tooltip-wrapper {
+  background: rgba(10, 10, 12, 0.9);
+  color: #fff;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 191, 255, 0.2);
+  box-shadow: 0 0 10px rgba(0, 191, 255, 0.2);
+}
+
+/* === Buttons === */
 .button {
-  background: linear-gradient(180deg,#1e1e24,#141418);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(180deg, #1e1e24, #141418);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--text);
   padding: 10px 16px;
   border-radius: 8px;
-  box-shadow: 0 0 6px rgba(0,191,255,0.15);
-  transition: all .2s ease;
+  box-shadow: 0 0 6px rgba(0, 191, 255, 0.15);
+  transition: all 0.2s ease;
+  font-weight: 500;
+  cursor: pointer;
 }
 .button:hover {
-  box-shadow: 0 0 12px rgba(0,191,255,0.3);
+  box-shadow: 0 0 12px rgba(0, 191, 255, 0.3);
   border-color: var(--accent);
   transform: translateY(-1px);
 }
 
-.header, .sidebar {
-  background: #111115;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  backdrop-filter: none;
+/* === Metrics Grid === */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.metric-card {
+  background: #131318;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius);
+  padding: 12px;
+  text-align: center;
+  box-shadow: inset 0 0 6px rgba(0, 191, 255, 0.1);
+  transition: 0.2s ease;
+}
+.metric-card:hover {
+  box-shadow: 0 0 10px rgba(0, 191, 255, 0.25);
+}
+.metric-title {
+  font-size: 13px;
+  color: var(--muted);
+}
+.metric-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: 4px;
+  text-shadow: 0 0 10px rgba(0, 191, 255, 0.3);
 }
 
-.ride-item.active {
-  border-color: var(--accent);
-  box-shadow: 0 0 8px rgba(0,191,255,0.3);
+/* === Zones Grid === */
+.zones-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+/* === Footer / Small Text === */
+.footer {
+  color: var(--muted);
+  text-align: center;
+  font-size: 13px;
+  padding: 12px;
+  opacity: 0.6;
 }
