@@ -23,7 +23,7 @@
 /* === Base Layout === */
 html, body {
   margin: 0;
-  padding: 0;
+  padding: 10px;
   background: var(--neutral-800);
   color: var(--neutral-400);
   font-family: "Mona Sans", "Inter", sans-serif;
