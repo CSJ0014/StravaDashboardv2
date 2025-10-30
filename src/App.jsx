@@ -1,47 +1,75 @@
-import React, { useState, useEffect, useMemo } from "react";
-import Header from "./components/Header";
-import Sidebar from "./components/Sidebar";
-import RideDetails from "./components/RideDetails";
-import { getActivities, getActivityStreams } from "./api/strava";
+import React, { useState, useEffect } from "react";
+import Header from "./components/Header.jsx";
+import Sidebar from "./components/Sidebar.jsx";
+import RideDetails from "./components/RideDetails.jsx";
+import "./styles.css";
 
 export default function App() {
   const [activities, setActivities] = useState([]);
-  const [selectedRide, setSelectedRide] = useState(null); // can be id or object
-  const [rideData, setRideData] = useState(null);
+  const [selectedActivity, setSelectedActivity] = useState(null);
+  const [activityData, setActivityData] = useState(null);
 
-  // Load recent activities on mount
+  // === Load Recent Activities ===
   useEffect(() => {
-    getActivities().then(setActivities).catch(console.error);
+    async function loadActivities() {
+      try {
+        const res = await fetch("/api/activities?per_page=15");
+        const data = await res.json();
+        setActivities(data || []);
+      } catch (err) {
+        console.error("Failed to load activities:", err);
+      }
+    }
+    loadActivities();
   }, []);
 
-  // Normalize to a full activity object for the UI
-  const selectedActivity = useMemo(() => {
-    if (!selectedRide) return null;
-    return typeof selectedRide === "object"
-      ? selectedRide
-      : activities.find((a) => a.id === selectedRide) || null;
-  }, [selectedRide, activities]);
+  // === Load Selected Activity ===
+  const handleSelect = async (activity) => {
+    setSelectedActivity(activity);
+    try {
+      const res = await fetch(`/api/activity/${activity.id}`);
+      const data = await res.json();
 
-  // Fetch streams when we have an id
-  useEffect(() => {
-    const id =
-      typeof selectedRide === "object" ? selectedRide?.id : selectedRide;
-    if (!id) return;
-    getActivityStreams(id)
-      .then((data) => setRideData(data))
-      .catch(console.error);
-  }, [selectedRide]);
+      if (data.error) throw new Error(data.error);
+
+      // Normalize the object so RideDetails always receives consistent keys
+      setActivityData({
+        details: data.activity,
+        series: data.streams,
+        metrics: {},
+        zones: {},
+      });
+    } catch (err) {
+      console.error("Error loading activity details:", err);
+      setActivityData(null);
+    }
+  };
 
   return (
     <div className="app">
       <Header />
-      <Sidebar onSelect={setSelectedRide} />
-      <main className="main">
-        <RideDetails
-          activity={selectedActivity}
-          streams={rideData?.streams || {}}
+      <div className="main">
+        <Sidebar
+          activities={activities}
+          selectedId={selectedActivity?.id}
+          onSelect={handleSelect}
         />
-      </main>
+        <div className="content">
+          {selectedActivity && activityData ? (
+            <RideDetails
+              activity={selectedActivity}
+              details={activityData.details}
+              series={activityData.series}
+              metrics={activityData.metrics}
+              zones={activityData.zones}
+            />
+          ) : (
+            <div className="card">
+              <p>Select a ride from the sidebar to view details.</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
