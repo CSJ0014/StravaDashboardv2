@@ -87,7 +87,7 @@ export default function RideDetails({ activity, streams }) {
       <div className="card">
         <div className="header-row">
           <h2>{activity.name}</h2>
-          <TxtButton activity={activity} />
+          <TxtButton rideData={{ activity, streams: s }} />
         </div>
 
         {/* === Stat Cards === */}
@@ -114,7 +114,7 @@ export default function RideDetails({ activity, streams }) {
           </div>
           <div className="stat">
             <h4>Normalized Power</h4>
-            <div>{activity.normalized_power?.toFixed(0) || "-"} W</div>
+            <div>{(activity.normalized_power ?? activity.weighted_average_watts ?? null)?.toFixed?.(0) || "-"} W</div>
           </div>
         </div>
       </div>
