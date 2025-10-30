@@ -1,130 +1,51 @@
-/* === Reset & Base === */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+:root {
+  --bg: #0c0c0f;
+  --card: #16161a;
+  --accent: #00bfff;
+  --accent2: #ff4f4f;
+  --muted: #777;
+  --text: #e6e6e6;
+  --radius: 10px;
+  --shadow: 0 0 8px rgba(0, 191, 255, 0.2);
+  --chipRide: #006eff;
+  --chipGravel: #7aff8f;
+  --chipVirtual: #ff7e87;
 }
 
 body {
-  font-family: "Inter", system-ui, sans-serif;
-  background-color: #0f0f10;
-  color: #e0e0e0;
-  -webkit-font-smoothing: antialiased;
+  background: var(--bg);
+  color: var(--text);
 }
 
-/* === Layout === */
-.app {
-  display: grid;
-  grid-template-areas:
-    "header header"
-    "sidebar main";
-  grid-template-columns: 280px 1fr;
-  grid-template-rows: auto 1fr;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.main {
-  grid-area: main;
-  overflow-y: auto;
-  padding: 24px 36px 48px;
-  background: #0f0f10;
-  color: #e0e0e0;
-}
-
-/* === Sidebar === */
-.sidebar {
-  grid-area: sidebar;
-  background: #171923;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 18px;
-  overflow-y: auto;
-}
-
-.sidebar h2 {
-  margin-bottom: 16px;
-  font-size: 1.1rem;
-  color: #8ef0ff;
-}
-
-/* === Cards === */
 .card {
-  background: #1a1b1f;
-  border: 1px solid #2a2b2e;
-  border-radius: 12px;
-  padding: 16px 20px;
-  margin-bottom: 16px;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
-  transition: all 0.2s ease;
+  background: #16161a;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: var(--radius);
+  box-shadow: 0 0 12px rgba(0,191,255,0.06);
 }
 
-.card:hover {
-  border-color: rgba(142, 240, 255, 0.25);
+.button {
+  background: linear-gradient(180deg,#1e1e24,#141418);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text);
+  padding: 10px 16px;
+  border-radius: 8px;
+  box-shadow: 0 0 6px rgba(0,191,255,0.15);
+  transition: all .2s ease;
+}
+.button:hover {
+  box-shadow: 0 0 12px rgba(0,191,255,0.3);
+  border-color: var(--accent);
+  transform: translateY(-1px);
 }
 
-/* === Stats Grid === */
-.stats-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 12px;
+.header, .sidebar {
+  background: #111115;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  backdrop-filter: none;
 }
 
-.stat {
-  flex: 1 1 140px;
-  background: #1a1b20;
-  border-radius: 12px;
-  padding: 12px;
-  text-align: center;
-}
-
-.stat h4 {
-  font-size: 0.8rem;
-  color: #aaa;
-  margin-bottom: 4px;
-}
-
-.stat div {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #fff;
-}
-
-/* === Empty States === */
-.empty {
-  text-align: center;
-  color: #777;
-  padding: 60px 0;
-}
-
-.footer-note {
-  font-size: 0.75rem;
-  color: #555;
-  margin-top: 12px;
-}
-
-/* === Scrollbar === */
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-/* === Zones Row === */
-.zones-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-top: 16px;
-}
-
-@media (max-width: 900px) {
-  .zones-row {
-    grid-template-columns: 1fr;
-  }
+.ride-item.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(0,191,255,0.3);
 }
