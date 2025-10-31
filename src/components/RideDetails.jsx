@@ -132,9 +132,27 @@ export default function RideDetails({ activity, streams }) {
                 labelStyle={{ color: "#6c72ff" }}
               />
               <Legend />
-              <Line type="monotone" dataKey="Power" stroke={colors.Power} strokeWidth={1.8} dot={false} />
-              <Line type="monotone" dataKey="HR" stroke={colors.HR} strokeWidth={1.5} dot={false} />
-              <Line type="monotone" dataKey="Speed" stroke={colors.Speed} strokeWidth={1.5} dot={false} />
+              <Line
+                type="monotone"
+                dataKey="Power"
+                stroke={colors.Power}
+                strokeWidth={1.8}
+                dot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="HR"
+                stroke={colors.HR}
+                strokeWidth={1.5}
+                dot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="Speed"
+                stroke={colors.Speed}
+                strokeWidth={1.5}
+                dot={false}
+              />
             </LineChart>
           </ResponsiveContainer>
         ) : (
@@ -151,7 +169,20 @@ export default function RideDetails({ activity, streams }) {
               <BarChart data={powerZones}>
                 <XAxis dataKey="zone" tick={{ fill: "#aaa" }} />
                 <YAxis tick={{ fill: "#aaa" }} />
-                <Tooltip contentStyle={{ background: "#0b1228" }} />
+                <Tooltip
+                  cursor={{ fill: "rgba(255,255,255,0.05)" }}
+                  formatter={(value, name, props) => [`${value}%`, "Time in Zone"]}
+                  contentStyle={{
+                    background: "rgba(20,25,40,0.8)",
+                    border: "none",
+                    borderRadius: "6px",
+                    boxShadow: "0 0 8px rgba(0,0,0,0.25)",
+                    color: "var(--neutral-100)",
+                    fontSize: "13px",
+                    padding: "6px 10px",
+                  }}
+                  labelStyle={{ color: "var(--accent-primary)", fontWeight: 600 }}
+                />
                 <Bar dataKey="pct" fill={colors.Power} />
               </BarChart>
             </ResponsiveContainer>
@@ -167,7 +198,20 @@ export default function RideDetails({ activity, streams }) {
               <BarChart data={hrZones}>
                 <XAxis dataKey="zone" tick={{ fill: "#aaa" }} />
                 <YAxis tick={{ fill: "#aaa" }} />
-                <Tooltip contentStyle={{ background: "#0b1228" }} />
+                <Tooltip
+                  cursor={{ fill: "rgba(255,255,255,0.05)" }}
+                  formatter={(value, name, props) => [`${value}%`, "Time in Zone"]}
+                  contentStyle={{
+                    background: "rgba(20,25,40,0.8)",
+                    border: "none",
+                    borderRadius: "6px",
+                    boxShadow: "0 0 8px rgba(0,0,0,0.25)",
+                    color: "var(--neutral-100)",
+                    fontSize: "13px",
+                    padding: "6px 10px",
+                  }}
+                  labelStyle={{ color: "var(--accent-primary)", fontWeight: 600 }}
+                />
                 <Bar dataKey="pct" fill={colors.HR} />
               </BarChart>
             </ResponsiveContainer>
@@ -177,8 +221,9 @@ export default function RideDetails({ activity, streams }) {
         </div>
       </div>
 
-      <div className="footer-note">Data via Strava API • Powered by your Cycling Dashboard</div>
+      <div className="footer-note">
+        Data via Strava API • Powered by your Cycling Dashboard
+      </div>
     </div>
   );
 }
-
