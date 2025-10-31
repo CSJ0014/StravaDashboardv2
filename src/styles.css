@@ -273,3 +273,8 @@ html, body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--accent-primary);
 }
+
+.recharts-default-tooltip {
+  z-index: 10000 !important;
+  pointer-events: none;
+}
