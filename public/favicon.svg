@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- Directional lighting from top-left -->
+    <radialGradient id="sphereLight" cx="30%" cy="25%" r="70%">
+      <stop offset="0%" stop-color="#bfc4ff"></stop>
+      <stop offset="40%" stop-color="#7074ff"></stop>
+      <stop offset="100%" stop-color="#0b0c10"></stop>
+    </radialGradient>
+    <!-- Subtle angled shadow -->
+    <filter id="angledShadow" x="-20%" y="-20%" width="150%" height="150%">
+      <feDropShadow dx="2" dy="4" stdDeviation="2" flood-color="rgba(0,0,0,0.6)"></feDropShadow>
+    </filter>
+  </defs>
+
+  <!-- Sphere -->
+  <circle cx="32" cy="32" r="28" fill="url(#sphereLight)" stroke="#2b3143" stroke-width="1.5" filter="url(#angledShadow)"></circle>
+</svg>
