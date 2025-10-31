@@ -173,22 +173,39 @@ html, body {
   margin-bottom: var(--space-md);
 }
 
-.stats-row {
+/* === Metrics Grid === */
+.metrics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: var(--space-md);
+  margin-top: var(--space-md);
 }
 
-.stat h4 {
+.metric-card {
+  background: rgba(20,25,40,0.8);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 10px;
+  padding: 12px 16px;
+  box-shadow: var(--shadow-01);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+}
+
+.metric-card h4 {
   font-size: var(--font-small);
   color: var(--neutral-500);
-  margin-bottom: var(--space-xs);
+  margin-bottom: 4px;
 }
 
-.stat div {
+.metric-card p {
   font-size: var(--font-title);
   color: var(--neutral-100);
   font-weight: 600;
+  margin: 0;
 }
 
 /* === Charts === */
