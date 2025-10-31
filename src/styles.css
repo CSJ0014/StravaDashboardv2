@@ -233,3 +233,37 @@ html, body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--accent-primary);
 }
+
+/* === Visibility Fix Patch for Ride Details === */
+.content, .ride-details {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  overflow: visible;
+}
+
+.stats-row, .zones-row {
+  display: grid;
+  grid-auto-rows: minmax(60px, auto);
+}
+
+.stat div, .stat h4 {
+  color: var(--neutral-200);
+}
+
+.chart-container {
+  width: 100%;
+  height: auto;
+  min-height: 320px;
+}
+
+.recharts-wrapper, .recharts-surface {
+  z-index: 2;
+  position: relative;
+}
