@@ -10,25 +10,29 @@ export default function App() {
   const [streams, setStreams] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // === FETCH RECENT ACTIVITIES ===
-  useEffect(() => {
-    async function loadActivities() {
-      try {
-        const res = await fetch("/api/strava/activities?per_page=15");
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        console.log("Fetched activities:", data);
+// === FETCH RECENT ACTIVITIES ===
+useEffect(() => {
+  async function loadActivities() {
+    try {
+      const res = await fetch("/api/strava/activities?per_page=15");
+      const text = await res.text();
 
-        // Handle both possible formats from backend
-        setActivities(data.activities || data || []);
-      } catch (err) {
-        console.error("Failed to fetch activities:", err);
-      } finally {
-        setLoading(false);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${text.slice(0, 100)}`);
+
+      const data = JSON.parse(text);
+      console.log("Fetched activities:", data);
+
+      // Handle both array and wrapped formats
+      setActivities(data.activities || data || []);
+    } catch (err) {
+      console.error("Failed to fetch activities:", err);
+    } finally {
+      setLoading(false);
     }
-    loadActivities();
-  }, []);
+  }
+
+  loadActivities(); // 👈 move this call *after* the async function definition
+}, []); // 👈 this closing brace was missing in your snippet
 
   // === LOAD SELECTED ACTIVITY DETAILS ===
   const loadActivityDetails = async (activity) => {
