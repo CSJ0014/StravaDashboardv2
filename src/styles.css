@@ -1,23 +1,23 @@
-/* === Root Colors (Dark Sleek Dashboard) === */
+/* === Root Colors (Dark Sleek Dashboard, Neutralized) === */
 :root {
-  --neutral-900: #050a1a;
-  --neutral-800: #080f25;
-  --neutral-700: #1a2341;
-  --neutral-600: #2c3658;
-  --neutral-500: #6f7a9b;
-  --neutral-400: #aeb9e1;
-  --neutral-300: #cbd3ef;
+  --neutral-900: #0b0c10;
+  --neutral-800: #12141b;
+  --neutral-700: #1c2030;
+  --neutral-600: #2b3143;
+  --neutral-500: #8a8f9f;
+  --neutral-400: #bfc4d2;
+  --neutral-300: #d6d9e0;
   --neutral-100: #ffffff;
 
-  --accent-primary: #6c72ff;
-  --accent-blue: #57c3ff;
-  --accent-green: #14ca74;
-  --accent-gold: #fdb52a;
+  --accent-primary: #7074ff;
+  --accent-blue: #4ea9f0;
+  --accent-green: #1ac273;
+  --accent-gold: #e9b44c;
   --accent-red: #ff5a65;
 
   --shadow-01: 0 2px 6px rgba(0, 0, 0, 0.4);
   --shadow-02: 0 6px 16px rgba(0, 0, 0, 0.45);
-  --shadow-glow: 0 0 16px rgba(108, 114, 255, 0.4);
+  --shadow-glow: 0 0 16px rgba(112, 116, 255, 0.4);
   --radius: 14px;
 
   --space-xs: 4px;
@@ -48,19 +48,20 @@ html, body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: linear-gradient(180deg, #050a1a 0%, #0b132d 100%);
+  background: radial-gradient(circle at 40% 40%, #0b0c10 0%, #080a12 80%);
 }
 
-/* === Header === */
+/* === Header (Floating Glass Effect) === */
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: var(--space-md) var(--space-lg);
-  background: linear-gradient(180deg, rgba(16,25,53,0.95), rgba(8,15,37,0.85));
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--neutral-700);
-  box-shadow: var(--shadow-01);
+  background: rgba(25, 30, 55, 0.55);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
   z-index: 10;
 }
 
@@ -85,11 +86,14 @@ html, body {
   overflow: hidden;
 }
 
-/* === Sidebar === */
+/* === Sidebar (Floating Glass Effect) === */
 .sidebar {
   width: 280px;
-  background: var(--neutral-700);
-  border-right: 1px solid var(--neutral-600);
+  background: rgba(28, 32, 48, 0.55);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border-right: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 4px 0 24px rgba(0,0,0,0.35), inset -1px 0 0 rgba(255,255,255,0.05);
   padding: var(--space-lg) var(--space-md);
   overflow-y: auto;
   color: var(--neutral-300);
@@ -131,7 +135,7 @@ html, body {
   flex: 1;
   overflow-y: auto;
   padding: var(--space-lg);
-  background: radial-gradient(circle at 40% 30%, rgba(16,25,53,0.8), #080f25);
+  background: radial-gradient(circle at 40% 30%, rgba(16,25,53,0.4), #080f25);
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
@@ -147,12 +151,12 @@ html, body {
 
 /* === Cards === */
 .card {
-  background: linear-gradient(180deg, rgba(16,25,53,0.95), rgba(8,15,37,0.95));
+  background: linear-gradient(180deg, rgba(20,25,40,0.9), rgba(8,12,22,0.9));
   border-radius: var(--radius);
   padding: var(--space-lg);
   box-shadow: var(--shadow-02);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
   transition: all 0.25s ease;
   overflow: visible;
 }
@@ -189,7 +193,7 @@ html, body {
 
 /* === Charts === */
 .chart-container {
-  background: rgba(16,25,53,0.85);
+  background: rgba(20, 25, 40, 0.8);
   border-radius: var(--radius);
   padding: var(--space-md) var(--space-lg);
   box-shadow: var(--shadow-01);
