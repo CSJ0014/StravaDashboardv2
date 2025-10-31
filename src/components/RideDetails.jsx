@@ -162,6 +162,7 @@ export default function RideDetails({ activity, streams }) {
 
       {/* === ZONES === */}
       <div className="zones-row">
+        {/* === Power Zones === */}
         <div className="card zone-card">
           <h3>Power Zones</h3>
           {powerZones.length ? (
@@ -170,18 +171,23 @@ export default function RideDetails({ activity, streams }) {
                 <XAxis dataKey="zone" tick={{ fill: "#aaa" }} />
                 <YAxis tick={{ fill: "#aaa" }} />
                 <Tooltip
-                  cursor={{ fill: "rgba(255,255,255,0.05)" }}
-                  formatter={(value, name, props) => [`${value}%`, "Time in Zone"]}
+                  wrapperStyle={{ zIndex: 10000 }}
+                  cursor={{ fill: "transparent" }}
+                  formatter={(value) => [`${value}%`, "Time in Zone"]}
                   contentStyle={{
-                    background: "rgba(20,25,40,0.8)",
+                    background: "rgba(20,25,40,0.95)",
                     border: "none",
                     borderRadius: "6px",
-                    boxShadow: "0 0 8px rgba(0,0,0,0.25)",
+                    boxShadow: "0 0 10px rgba(0,0,0,0.5)",
                     color: "var(--neutral-100)",
                     fontSize: "13px",
                     padding: "6px 10px",
                   }}
-                  labelStyle={{ color: "var(--accent-primary)", fontWeight: 600 }}
+                  labelStyle={{
+                    color: "var(--accent-primary)",
+                    fontWeight: 600,
+                    marginBottom: "2px",
+                  }}
                 />
                 <Bar dataKey="pct" fill={colors.Power} />
               </BarChart>
@@ -191,6 +197,7 @@ export default function RideDetails({ activity, streams }) {
           )}
         </div>
 
+        {/* === HR Zones === */}
         <div className="card zone-card">
           <h3>Heart Rate Zones</h3>
           {hrZones.length ? (
@@ -199,18 +206,23 @@ export default function RideDetails({ activity, streams }) {
                 <XAxis dataKey="zone" tick={{ fill: "#aaa" }} />
                 <YAxis tick={{ fill: "#aaa" }} />
                 <Tooltip
-                  cursor={{ fill: "rgba(255,255,255,0.05)" }}
-                  formatter={(value, name, props) => [`${value}%`, "Time in Zone"]}
+                  wrapperStyle={{ zIndex: 10000 }}
+                  cursor={{ fill: "transparent" }}
+                  formatter={(value) => [`${value}%`, "Time in Zone"]}
                   contentStyle={{
-                    background: "rgba(20,25,40,0.8)",
+                    background: "rgba(20,25,40,0.95)",
                     border: "none",
                     borderRadius: "6px",
-                    boxShadow: "0 0 8px rgba(0,0,0,0.25)",
+                    boxShadow: "0 0 10px rgba(0,0,0,0.5)",
                     color: "var(--neutral-100)",
                     fontSize: "13px",
                     padding: "6px 10px",
                   }}
-                  labelStyle={{ color: "var(--accent-primary)", fontWeight: 600 }}
+                  labelStyle={{
+                    color: "var(--accent-primary)",
+                    fontWeight: 600,
+                    marginBottom: "2px",
+                  }}
                 />
                 <Bar dataKey="pct" fill={colors.HR} />
               </BarChart>
