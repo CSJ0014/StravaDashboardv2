@@ -29,7 +29,11 @@ export default function RideDetails({ activity, streams }) {
   const watts = s.watts?.data || [];
   const hr = s.heartrate?.data || [];
   const speed = s.velocity_smooth?.data || [];
-  const altitude = s.altitude?.data || [];
+  const altitude =
+  s.altitude?.data ||
+  s.altitude_smooth?.data ||
+  s.elevation?.data ||
+  [];
   const distance = s.distance?.data || [];
   const cadence = s.cadence?.data || [];
 
