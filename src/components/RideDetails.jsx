@@ -93,7 +93,7 @@ export default function RideDetails({ activity, streams }) {
         <div className="stats-grid">
           {[
             { label: "Distance", value: `${(activity.distance / 1609).toFixed(2)} mi` },
-            { label: "Elevation", value: `${activity.total_elevation_gain.toFixed(0)} ft` },
+            { label: "Elevation", value: `${(activity.total_elevation_gain * 3.28084).toFixed(0)} ft` },
             { label: "Moving Time", value: `${Math.round(activity.moving_time / 60)} min` },
             { label: "Avg HR", value: `${activity.average_heartrate?.toFixed(0) || "-"} bpm` },
             { label: "Avg Power", value: `${activity.average_watts?.toFixed(0) || "-"} W` },
