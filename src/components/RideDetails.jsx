@@ -10,6 +10,10 @@ import {
   BarChart,
   Bar,
   Legend,
+  AreaChart,
+  Area,
+  ScatterChart,
+  Scatter,
 } from "recharts";
 import TxtButton from "./TxtButton.jsx";
 
@@ -27,6 +31,8 @@ export default function RideDetails({ activity, streams }) {
   const watts = s.watts?.data || [];
   const hr = s.heartrate?.data || [];
   const speed = s.velocity_smooth?.data || [];
+  const altitude = s.altitude?.data || [];
+  const distance = s.distance?.data || [];
 
   // === Build chart data ===
   const chartData = useMemo(() => {
@@ -38,6 +44,17 @@ export default function RideDetails({ activity, streams }) {
       Speed: speed[i] ? (speed[i] * 2.237).toFixed(1) : null,
     }));
   }, [time, watts, hr, speed]);
+
+  // === Compute tick values for 30s intervals ===
+  const tickValues = useMemo(() => {
+    if (!chartData.length) return [];
+    const last = parseFloat(chartData[chartData.length - 1].time);
+    const ticks = [];
+    for (let t = 0; t <= last; t += 0.5) {
+      ticks.push(t.toFixed(1));
+    }
+    return ticks;
+  }, [chartData]);
 
   // === Zone computations ===
   const computeZones = (arr, zones) => {
@@ -74,6 +91,50 @@ export default function RideDetails({ activity, streams }) {
     [180, 999],
   ]);
 
+  // === Elevation profile ===
+  const elevationData = useMemo(() => {
+    if (!altitude?.length || !distance?.length) return [];
+    return altitude.map((alt, i) => ({
+      dist: (distance[i] / 1609).toFixed(1), // miles
+      elev: (alt * 3.28084).toFixed(0), // feet
+    }));
+  }, [altitude, distance]);
+
+  // === Power histogram ===
+  const powerBins = useMemo(() => {
+    if (!watts.length) return [];
+    const binSize = 25;
+    const maxWatt = Math.max(...watts);
+    const bins = [];
+    for (let start = 0; start <= maxWatt; start += binSize) {
+      const end = start + binSize;
+      const count = watts.filter((w) => w >= start && w < end).length;
+      bins.push({ bin: `${start}-${end}`, count });
+    }
+    return bins;
+  }, [watts]);
+
+  // === HR drift / decoupling (trend over time) ===
+  const hrDriftData = useMemo(() => {
+    if (!time.length || !hr.length || !watts.length) return [];
+    const window = 300; // 5-min segments
+    const segments = [];
+    for (let i = 0; i < time.length; i += window) {
+      const sliceWatts = watts.slice(i, i + window);
+      const sliceHR = hr.slice(i, i + window);
+      if (sliceWatts.length && sliceHR.length) {
+        const avgP = sliceWatts.reduce((a, b) => a + b, 0) / sliceWatts.length;
+        const avgHR = sliceHR.reduce((a, b) => a + b, 0) / sliceHR.length;
+        segments.push({
+          segment: (i / window + 1).toFixed(0),
+          AvgPower: Math.round(avgP),
+          AvgHR: Math.round(avgHR),
+        });
+      }
+    }
+    return segments;
+  }, [time, hr, watts]);
+
   const colors = {
     Power: "#6c72ff",
     HR: "#ff7e87",
@@ -89,7 +150,7 @@ export default function RideDetails({ activity, streams }) {
           <TxtButton rideData={{ activity, streams: s }} />
         </div>
 
-        {/* === DASHDARK-STYLE METRIC CARDS === */}
+        {/* === STATS === */}
         <div className="stats-grid">
           {[
             { label: "Distance", value: `${(activity.distance / 1609).toFixed(2)} mi` },
@@ -114,14 +175,14 @@ export default function RideDetails({ activity, streams }) {
         </div>
       </div>
 
-      {/* === CHARTS === */}
+      {/* === Combined Chart === */}
       <div className="card chart-card">
         <h3>Power • Heart Rate • Speed</h3>
         {chartData.length ? (
           <ResponsiveContainer width="100%" height={350}>
             <LineChart data={chartData}>
               <CartesianGrid stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="time" tick={{ fill: "#aaa", fontSize: 11 }} />
+              <XAxis dataKey="time" ticks={tickValues} tick={{ fill: "#aaa", fontSize: 11 }} />
               <YAxis tick={{ fill: "#aaa", fontSize: 11 }} />
               <Tooltip
                 contentStyle={{
@@ -132,27 +193,9 @@ export default function RideDetails({ activity, streams }) {
                 labelStyle={{ color: "#6c72ff" }}
               />
               <Legend />
-              <Line
-                type="monotone"
-                dataKey="Power"
-                stroke={colors.Power}
-                strokeWidth={1.8}
-                dot={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="HR"
-                stroke={colors.HR}
-                strokeWidth={1.5}
-                dot={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="Speed"
-                stroke={colors.Speed}
-                strokeWidth={1.5}
-                dot={false}
-              />
+              <Line type="monotone" dataKey="Power" stroke={colors.Power} strokeWidth={1.8} dot={false} />
+              <Line type="monotone" dataKey="HR" stroke={colors.HR} strokeWidth={1.5} dot={false} />
+              <Line type="monotone" dataKey="Speed" stroke={colors.Speed} strokeWidth={1.5} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         ) : (
@@ -160,9 +203,31 @@ export default function RideDetails({ activity, streams }) {
         )}
       </div>
 
-      {/* === ZONES === */}
+      {/* === Elevation Profile === */}
+      <div className="card chart-card">
+        <h3>Elevation Profile</h3>
+        {elevationData.length ? (
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={elevationData}>
+              <defs>
+                <linearGradient id="elevGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#7074ff" stopOpacity={0.8} />
+                  <stop offset="100%" stopColor="#0b0c10" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="dist" tick={{ fill: "#aaa" }} />
+              <YAxis tick={{ fill: "#aaa" }} />
+              <Tooltip cursor={{ fill: "transparent" }} />
+              <Area type="monotone" dataKey="elev" stroke="#7074ff" fill="url(#elevGradient)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <p className="empty-note">Elevation data not available</p>
+        )}
+      </div>
+
+      {/* === ZONES + HISTOGRAM === */}
       <div className="zones-row">
-        {/* === Power Zones === */}
         <div className="card zone-card">
           <h3>Power Zones</h3>
           {powerZones.length ? (
@@ -170,25 +235,7 @@ export default function RideDetails({ activity, streams }) {
               <BarChart data={powerZones}>
                 <XAxis dataKey="zone" tick={{ fill: "#aaa" }} />
                 <YAxis tick={{ fill: "#aaa" }} />
-                <Tooltip
-                  wrapperStyle={{ zIndex: 10000 }}
-                  cursor={{ fill: "transparent" }}
-                  formatter={(value) => [`${value}%`, "Time in Zone"]}
-                  contentStyle={{
-                    background: "rgba(20,25,40,0.95)",
-                    border: "none",
-                    borderRadius: "6px",
-                    boxShadow: "0 0 10px rgba(0,0,0,0.5)",
-                    color: "var(--neutral-100)",
-                    fontSize: "13px",
-                    padding: "6px 10px",
-                  }}
-                  labelStyle={{
-                    color: "var(--accent-primary)",
-                    fontWeight: 600,
-                    marginBottom: "2px",
-                  }}
-                />
+                <Tooltip wrapperStyle={{ zIndex: 10000 }} cursor={{ fill: "transparent" }} />
                 <Bar dataKey="pct" fill={colors.Power} />
               </BarChart>
             </ResponsiveContainer>
@@ -197,40 +244,41 @@ export default function RideDetails({ activity, streams }) {
           )}
         </div>
 
-        {/* === HR Zones === */}
         <div className="card zone-card">
-          <h3>Heart Rate Zones</h3>
-          {hrZones.length ? (
+          <h3>Power Distribution</h3>
+          {powerBins.length ? (
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={hrZones}>
-                <XAxis dataKey="zone" tick={{ fill: "#aaa" }} />
-                <YAxis tick={{ fill: "#aaa" }} />
-                <Tooltip
-                  wrapperStyle={{ zIndex: 10000 }}
-                  cursor={{ fill: "transparent" }}
-                  formatter={(value) => [`${value}%`, "Time in Zone"]}
-                  contentStyle={{
-                    background: "rgba(20,25,40,0.95)",
-                    border: "none",
-                    borderRadius: "6px",
-                    boxShadow: "0 0 10px rgba(0,0,0,0.5)",
-                    color: "var(--neutral-100)",
-                    fontSize: "13px",
-                    padding: "6px 10px",
-                  }}
-                  labelStyle={{
-                    color: "var(--accent-primary)",
-                    fontWeight: 600,
-                    marginBottom: "2px",
-                  }}
-                />
-                <Bar dataKey="pct" fill={colors.HR} />
+              <BarChart data={powerBins}>
+                <XAxis dataKey="bin" tick={{ fill: "#aaa", fontSize: 10 }} />
+                <YAxis tick={{ fill: "#aaa", fontSize: 10 }} />
+                <Tooltip wrapperStyle={{ zIndex: 10000 }} cursor={{ fill: "transparent" }} />
+                <Bar dataKey="count" fill="#6c72ff" />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="empty-note">HR data not available</p>
+            <p className="empty-note">No power data</p>
           )}
         </div>
+      </div>
+
+      {/* === HR Drift / Decoupling === */}
+      <div className="card chart-card">
+        <h3>Heart Rate Drift (Decoupling)</h3>
+        {hrDriftData.length ? (
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={hrDriftData}>
+              <CartesianGrid stroke="rgba(255,255,255,0.05)" />
+              <XAxis dataKey="segment" tick={{ fill: "#aaa" }} />
+              <YAxis tick={{ fill: "#aaa" }} />
+              <Tooltip wrapperStyle={{ zIndex: 10000 }} cursor={{ fill: "transparent" }} />
+              <Legend />
+              <Line type="monotone" dataKey="AvgPower" stroke="#6c72ff" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="AvgHR" stroke="#ff7e87" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <p className="empty-note">Not enough data for HR drift</p>
+        )}
       </div>
 
       <div className="footer-note">
