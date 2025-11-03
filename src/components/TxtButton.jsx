@@ -45,7 +45,7 @@ export default function TxtButton({ rideData }) {
     output += `Ride Summary: ${activity.name}\n`;
     output += `Date: ${new Date(activity.start_date_local).toLocaleString()}\n`;
     output += `Distance: ${(activity.distance / 1609.34).toFixed(2)} mi\n`;
-    output += `Elevation Gain: ${activity.total_elevation_gain?.toFixed(0)} ft\n`;
+    output += `Elevation Gain: ${(activity.total_elevation_gain * 3.28084).toFixed(0)} ft\n`;
     output += `Duration: ${(activity.moving_time / 60).toFixed(0)} min\n`;
     output += `Avg Power: ${avgPower.toFixed(0)} W\n`;
     output += `NP: ${np.toFixed(0)} W\n`;
