@@ -95,70 +95,61 @@ export default function RideDetails({ activity, streams }) {
 {/* === ELEVATION PROFILE === */}
 <div className="card chart-card">
   <h3>Elevation Profile</h3>
+  {elevationData.length ? (
+    <ResponsiveContainer width="100%" height={250}>
+      <AreaChart
+        data={elevationData}
+        margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
+      >
+        <defs>
+          <linearGradient id="elevGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#7074ff" stopOpacity={0.8} />
+            <stop offset="100%" stopColor="#0b0c10" stopOpacity={0} />
+          </linearGradient>
+        </defs>
 
-  {/* === Build elevation data (always use Strava’s real stream) === */}
-  {(() => {
-    const elevationData = (() => {
-      if (!altitude?.length || !distance?.length) return [];
-      const len = Math.min(altitude.length, distance.length);
-      return Array.from({ length: len }, (_, i) => ({
-        dist: (distance[i] / 1609).toFixed(1),  // miles
-        elev: (altitude[i] * 3.28084).toFixed(0),  // feet
-      }));
-    })();
+        <XAxis
+          dataKey="dist"
+          tick={{ fill: "#aaa", fontSize: 11 }}
+          label={{ value: "Miles", position: "insideBottom", offset: -5 }}
+        />
 
-    return elevationData.length ? (
-      <ResponsiveContainer width="100%" height={250}>
-        <AreaChart
-          data={elevationData}
-          margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
-        >
-          <defs>
-            <linearGradient id="elevGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#7074ff" stopOpacity={0.8} />
-              <stop offset="100%" stopColor="#0b0c10" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <XAxis
-            dataKey="dist"
-            tick={{ fill: "#aaa", fontSize: 11 }}
-            label={{ value: "Miles", position: "insideBottom", offset: -5 }}
-          />
-          <YAxis
-            tick={{ fill: "#aaa", fontSize: 11 }}
-            tickFormatter={(val) => `${val} ft`}
-            domain={["dataMin - 50", "dataMax + 150"]} // Adds safe padding
-            allowDataOverflow={true} // Prevent clipping
-          />
-          <Tooltip
-            cursor={{ fill: "transparent" }}
-            contentStyle={{
-              background: "rgba(12,18,34,0.9)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "10px",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
-              color: "#fff",
-              fontSize: "13px",
-              padding: "6px 10px",
-            }}
-            labelFormatter={(v) => `Mile ${v}`}
-            formatter={(val) => [`${val} ft`, "Elevation"]}
-          />
-          <Area
-            type="monotone"
-            dataKey="elev"
-            stroke="#7074ff"
-            strokeWidth={2}
-            fill="url(#elevGradient)"
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    ) : (
-      <p className="empty-note">Elevation data not available</p>
-    );
-  })()}
+        <YAxis
+          tick={{ fill: "#aaa", fontSize: 11 }}
+          tickFormatter={(val) => `${val} ft`}
+          domain={["dataMin - 50", "dataMax + 150"]} // Add headroom
+          allowDataOverflow={true} // Prevent clipping
+        />
+
+        <Tooltip
+          cursor={{ fill: "transparent" }}
+          contentStyle={{
+            background: "rgba(12,18,34,0.9)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "10px",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+            color: "#fff",
+            fontSize: "13px",
+            padding: "6px 10px",
+          }}
+          labelFormatter={(v) => `Mile ${v}`}
+          formatter={(val) => [`${val} ft`, "Elevation"]}
+        />
+
+        <Area
+          type="monotone"
+          dataKey="elev"
+          stroke="#7074ff"
+          strokeWidth={2}
+          fill="url(#elevGradient)"
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  ) : (
+    <p className="empty-note">Elevation data not available</p>
+  )}
 </div>
-
+  
   // === Power histogram ===
   const powerBins = useMemo(() => {
     if (!watts.length) return [];
