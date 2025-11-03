@@ -41,7 +41,7 @@ export default async function handler(req, res) {
 
     // 3️⃣ Fetch streams (power, hr, speed, etc.)
     const streamsRes = await fetch(
-      `https://www.strava.com/api/v3/activities/${id}/streams?keys=watts,heartrate,velocity_smooth,cadence,time,distance&key_by_type=true`,
+      `https://www.strava.com/api/v3/activities/${id}/streams?keys=watts,heartrate,velocity_smooth,cadence,time,distance,altitude&key_by_type=true`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
