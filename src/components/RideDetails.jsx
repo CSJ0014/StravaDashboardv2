@@ -92,25 +92,15 @@ export default function RideDetails({ activity, streams }) {
     [180, 999],
   ]);
 
-  // === Smart elevation (real vs synthetic) ===
-  const elevationData = useMemo(() => {
-    if (altitude?.length && distance?.length) {
-      return altitude.map((alt, i) => ({
-        dist: (distance[i] / 1609).toFixed(1),
-        elev: (alt * 3.28084).toFixed(0),
-      }));
-    } else if (distance?.length && activity.total_elevation_gain) {
-      const totalGain = activity.total_elevation_gain * 3.28084;
-      const maxDist = distance[distance.length - 1] / 1609;
-      return Array.from({ length: 120 }, (_, i) => ({
-        dist: ((i / 120) * maxDist).toFixed(1),
-        elev: Math.round(
-          (Math.sin((i / 120) * Math.PI * 2) + 1) * (totalGain / 4)
-        ),
-      }));
-    }
-    return [];
-  }, [altitude, distance, activity.total_elevation_gain]);
+// === Elevation data (always use Strava's stream) ===
+const elevationData = useMemo(() => {
+  if (!altitude?.length || !distance?.length) return [];
+  const len = Math.min(altitude.length, distance.length); // handle minor mismatches safely
+  return Array.from({ length: len }, (_, i) => ({
+    dist: (distance[i] / 1609).toFixed(1),  // miles
+    elev: (altitude[i] * 3.28084).toFixed(0),  // feet
+  }));
+}, [altitude, distance]);
 
   // === Power histogram ===
   const powerBins = useMemo(() => {
