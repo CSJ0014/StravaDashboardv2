@@ -92,13 +92,16 @@ export default function RideDetails({ activity, streams }) {
     [180, 999],
   ]);
 
-{/* === ELEVATION PROFILE === */}
+  {/* === ELEVATION PROFILE === */}
 <div className="card chart-card">
   <h3>Elevation Profile</h3>
-  {elevationData.length ? (
+
+  {Array.isArray(elevationData) && elevationData.length > 1 ? (
     <ResponsiveContainer width="100%" height={250}>
       <AreaChart
-        data={elevationData}
+        data={elevationData.filter(
+          (d) => !isNaN(parseFloat(d.elev)) && !isNaN(parseFloat(d.dist))
+        )}
         margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
       >
         <defs>
@@ -116,9 +119,11 @@ export default function RideDetails({ activity, streams }) {
 
         <YAxis
           tick={{ fill: "#aaa", fontSize: 11 }}
-          tickFormatter={(val) => `${val} ft`}
-          domain={["dataMin - 50", "dataMax + 150"]} // Add headroom
-          allowDataOverflow={true} // Prevent clipping
+          tickFormatter={(val) =>
+            typeof val === "number" ? `${val.toFixed(0)} ft` : ""
+          }
+          domain={["dataMin - 50", "dataMax + 150"]}
+          allowDataOverflow={true}
         />
 
         <Tooltip
@@ -132,8 +137,10 @@ export default function RideDetails({ activity, streams }) {
             fontSize: "13px",
             padding: "6px 10px",
           }}
-          labelFormatter={(v) => `Mile ${v}`}
-          formatter={(val) => [`${val} ft`, "Elevation"]}
+          labelFormatter={(v) => (v ? `Mile ${v}` : "")}
+          formatter={(val) =>
+            val && !isNaN(val) ? [`${val} ft`, "Elevation"] : ["", ""]
+          }
         />
 
         <Area
@@ -142,6 +149,7 @@ export default function RideDetails({ activity, streams }) {
           stroke="#7074ff"
           strokeWidth={2}
           fill="url(#elevGradient)"
+          isAnimationActive={false}
         />
       </AreaChart>
     </ResponsiveContainer>
@@ -149,6 +157,7 @@ export default function RideDetails({ activity, streams }) {
     <p className="empty-note">Elevation data not available</p>
   )}
 </div>
+
 
   // === Power histogram ===
   const powerBins = useMemo(() => {
