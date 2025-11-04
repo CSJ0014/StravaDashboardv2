@@ -149,7 +149,7 @@ export default function RideDetails({ activity, streams }) {
     <p className="empty-note">Elevation data not available</p>
   )}
 </div>
-  
+
   // === Power histogram ===
   const powerBins = useMemo(() => {
     if (!watts.length) return [];
