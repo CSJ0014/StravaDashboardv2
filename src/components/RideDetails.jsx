@@ -24,27 +24,27 @@ export default function RideDetails({ activity, streams }) {
     );
 
   // === Safely unwrap streams ===
-  const s = streams?.streams || streams || {};
-  const time = s.time?.data || [];
-  const watts = s.watts?.data || [];
-  const hr = s.heartrate?.data || [];
-  const speed = s.velocity_smooth?.data || [];
+  const s = (streams && (streams.streams || streams)) || {};
+  const time = Array.isArray(s.time?.data) ? s.time.data : [];
+  const watts = Array.isArray(s.watts?.data) ? s.watts.data : [];
+  const hr = Array.isArray(s.heartrate?.data) ? s.heartrate.data : [];
+  const speed = Array.isArray(s.velocity_smooth?.data) ? s.velocity_smooth.data : [];
   const altitude =
-  s.altitude?.data ||
-  s.altitude_smooth?.data ||
-  s.elevation?.data ||
-  [];
-  const distance = s.distance?.data || [];
-  const cadence = s.cadence?.data || [];
+    (Array.isArray(s.altitude?.data) && s.altitude.data) ||
+    (Array.isArray(s.altitude_smooth?.data) && s.altitude_smooth.data) ||
+    (Array.isArray(s.elevation?.data) && s.elevation.data) ||
+    [];
+  const distance = Array.isArray(s.distance?.data) ? s.distance.data : [];
+  const cadence = Array.isArray(s.cadence?.data) ? s.cadence.data : [];
 
   // === Build chart data ===
   const chartData = useMemo(() => {
-    if (!time.length) return [];
+    if (!Array.isArray(time) || !time.length) return [];
     return time.map((t, i) => ({
       time: (t / 60).toFixed(1),
-      Power: watts[i] || null,
-      HR: hr[i] || null,
-      Speed: speed[i] ? (speed[i] * 2.237).toFixed(1) : null,
+      Power: watts[i] ?? null,
+      HR: hr[i] ?? null,
+      Speed: speed[i] != null ? (speed[i] * 2.237).toFixed(1) : null,
     }));
   }, [time, watts, hr, speed]);
 
@@ -67,7 +67,7 @@ export default function RideDetails({ activity, streams }) {
         if (val >= low && val < high) counts[i]++;
       }
     }
-    const total = arr.length;
+    const total = arr.length || 1;
     return counts.map((c, i) => ({
       zone: `Z${i + 1}`,
       pct: ((c / total) * 100).toFixed(1),
@@ -92,7 +92,23 @@ export default function RideDetails({ activity, streams }) {
     [180, 999],
   ]);
 
-  // === ELEVATION PROFILE === 
+  // === Elevation data (real Strava stream; no synthetic) ===
+  const elevationData = useMemo(() => {
+    if (!altitude.length || !distance.length) return [];
+    const len = Math.min(altitude.length, distance.length);
+    const rows = [];
+    for (let i = 0; i < len; i++) {
+      const d = distance[i];
+      const a = altitude[i];
+      if (Number.isFinite(d) && Number.isFinite(a)) {
+        rows.push({
+          dist: (d / 1609).toFixed(1),          // miles
+          elev: Number((a * 3.28084).toFixed(0)) // feet as number
+        });
+      }
+    }
+    return rows;
+  }, [altitude, distance]);
 
   // === Power histogram ===
   const powerBins = useMemo(() => {
@@ -171,11 +187,23 @@ export default function RideDetails({ activity, streams }) {
         {/* === STATS === */}
         <div className="stats-grid">
           {[
-            { label: "Distance", value: `${(activity.distance / 1609).toFixed(2)} mi` },
-            { label: "Elevation", value: `${(activity.total_elevation_gain * 3.28084).toFixed(0)} ft` },
-            { label: "Moving Time", value: `${Math.round(activity.moving_time / 60)} min` },
-            { label: "Avg HR", value: `${activity.average_heartrate?.toFixed(0) || "-"} bpm` },
-            { label: "Avg Power", value: `${activity.average_watts?.toFixed(0) || "-"} W` },
+            {
+              label: "Distance",
+              value:
+                Number.isFinite(activity.distance)
+                  ? `${(activity.distance / 1609).toFixed(2)} mi`
+                  : "-",
+            },
+            {
+              label: "Elevation",
+              value:
+                Number.isFinite(activity.total_elevation_gain)
+                  ? `${(activity.total_elevation_gain * 3.28084).toFixed(0)} ft`
+                  : "-",
+            },
+            { label: "Moving Time", value: `${Math.round((activity.moving_time || 0) / 60)} min` },
+            { label: "Avg HR", value: `${activity.average_heartrate?.toFixed?.(0) ?? "-"} bpm` },
+            { label: "Avg Power", value: `${activity.average_watts?.toFixed?.(0) ?? "-"} W` },
             {
               label: "Normalized Power",
               value: `${
@@ -292,18 +320,26 @@ export default function RideDetails({ activity, streams }) {
       <div className="card chart-card">
         <h3>Elevation Profile</h3>
         {elevationData.length ? (
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={elevationData}>
+          <ResponsiveContainer width="100%" height={250}>
+            <AreaChart
+              data={elevationData}
+              margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
+            >
               <defs>
                 <linearGradient id="elevGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#7074ff" stopOpacity={0.8} />
                   <stop offset="100%" stopColor="#0b0c10" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="dist" tick={{ fill: "#aaa" }} />
-              <YAxis tick={{ fill: "#aaa" }} />
+              <XAxis dataKey="dist" tick={{ fill: "#aaa", fontSize: 11 }} />
+              <YAxis
+                tick={{ fill: "#aaa", fontSize: 11 }}
+                tickFormatter={(val) => `${val} ft`}
+                domain={["dataMin - 50", "dataMax + 150"]}
+                allowDataOverflow
+              />
               <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "transparent" }} />
-              <Area type="monotone" dataKey="elev" stroke="#7074ff" fill="url(#elevGradient)" />
+              <Area type="monotone" dataKey="elev" stroke="#7074ff" strokeWidth={2} fill="url(#elevGradient)" isAnimationActive={false} />
             </AreaChart>
           </ResponsiveContainer>
         ) : (
