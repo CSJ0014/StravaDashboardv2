@@ -241,7 +241,91 @@ export default function RideDetails({ activity, streams }) {
           <p className="empty-note">No stream data available</p>
         )}
       </div>
+      
+{/* === POWER ZONE TRACE (Color-Neon Hybrid Glow) === */}
+<div className="card chart-card">
+  <h3>Power Zone Trace</h3>
+  {time.length ? (
+    <ResponsiveContainer width="100%" height={240}>
+      <LineChart
+        data={time.map((t, i) => {
+          const pct = watts[i] / 222;
+          let zoneColor = "#6c72ff"; // default Z3 fallback
 
+          if (pct < 0.55) zoneColor = "#3a3f5a";        // Z1 soft
+          else if (pct < 0.75) zoneColor = "#4d5b8a";   // Z2 soft
+          else if (pct < 0.9) zoneColor = "#7074ff";    // Z3 subtle
+          else if (pct < 1.05) zoneColor = "#9e99ff";   // Z4 mild glow
+          else if (pct < 1.2) zoneColor = "#ff6fa0";    // Z5 bright glow
+          else zoneColor = "#ff3e6c";                   // Z6 full intensity
+
+          return {
+            time: (t / 60).toFixed(1),
+            watt: watts[i],
+            zoneColor,
+          };
+        })}
+      >
+        <CartesianGrid stroke="rgba(255,255,255,0.04)" />
+
+        <XAxis
+          dataKey="time"
+          tick={{ fill: "#aaa", fontSize: 10 }}
+        />
+
+        <YAxis
+          tick={{ fill: "#aaa", fontSize: 10 }}
+        />
+
+        <Tooltip
+          contentStyle={{
+            background: "rgba(12,18,34,0.9)",
+            borderRadius: "10px",
+            border: "1px solid rgba(255,255,255,0.1)",
+          }}
+          labelStyle={{ color: "#6c72ff" }}
+          formatter={(value) => [`${value} W`, "Power"]}
+        />
+
+        <Line
+          type="monotone"
+          dataKey="watt"
+          stroke="#ffffff" // overwritten dynamically
+          strokeWidth={3.2}
+          dot={false}
+          isAnimationActive={true}
+          animationDuration={600}
+          strokeDasharray="0"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          {/* Per-point custom stroke colors */}
+          {time.map((_, i) => (
+            <Line
+              key={i}
+              type="monotone"
+              dataKey="watt"
+              stroke={(time.map((t, j) => {
+                const pct = watts[j] / 222;
+                if (pct < 0.55) return "#3a3f5a";
+                if (pct < 0.75) return "#4d5b8a";
+                if (pct < 0.9) return "#7074ff";
+                if (pct < 1.05) return "#9e99ff";
+                if (pct < 1.2) return "#ff6fa0";
+                return "#ff3e6c";
+              }))[i]}
+              strokeWidth={3.2}
+              dot={false}
+            />
+          ))}
+        </Line>
+      </LineChart>
+    </ResponsiveContainer>
+  ) : (
+    <p className="empty-note">No power data available</p>
+  )}
+</div>
+      
       {/* === ZONE CHARTS === */}
       <div className="zones-row">
         {/* Power Zones */}
