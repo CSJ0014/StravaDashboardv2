@@ -32,12 +32,11 @@ export default function RideDetails({ activity, streams }) {
   const altitude =
     (Array.isArray(s.altitude?.data) && s.altitude.data) ||
     (Array.isArray(s.altitude_smooth?.data) && s.altitude_smooth.data) ||
-    (Array.isArray(s.elevation?.data) && s.elevation.data) ||
     [];
   const distance = Array.isArray(s.distance?.data) ? s.distance.data : [];
   const cadence = Array.isArray(s.cadence?.data) ? s.cadence.data : [];
 
-  // === Build chart data ===
+  // === MAIN COMBINED CHART DATA ===
   const chartData = useMemo(() => {
     if (!Array.isArray(time) || !time.length) return [];
     return time.map((t, i) => ({
@@ -48,7 +47,7 @@ export default function RideDetails({ activity, streams }) {
     }));
   }, [time, watts, hr, speed]);
 
-  // === Tick values for 30s intervals ===
+  // === Tick values every 30s ===
   const tickValues = useMemo(() => {
     if (!chartData.length) return [];
     const last = parseFloat(chartData[chartData.length - 1].time);
@@ -57,7 +56,7 @@ export default function RideDetails({ activity, streams }) {
     return ticks;
   }, [chartData]);
 
-  // === Zone computations ===
+  // === Zone calculations ===
   const computeZones = (arr, zones) => {
     if (!arr?.length) return [];
     const counts = zones.map(() => 0);
@@ -92,30 +91,24 @@ export default function RideDetails({ activity, streams }) {
     [180, 999],
   ]);
 
-  // === Elevation data (real Strava stream; no synthetic) ===
+  // === Elevation Profile ===
   const elevationData = useMemo(() => {
     if (!altitude.length || !distance.length) return [];
     const len = Math.min(altitude.length, distance.length);
-    const rows = [];
-    for (let i = 0; i < len; i++) {
-      const d = distance[i];
-      const a = altitude[i];
-      if (Number.isFinite(d) && Number.isFinite(a)) {
-        rows.push({
-          dist: (d / 1609).toFixed(1),          // miles
-          elev: Number((a * 3.28084).toFixed(0)) // feet as number
-        });
-      }
-    }
-    return rows;
+
+    return Array.from({ length: len }, (_, i) => ({
+      dist: (distance[i] / 1609).toFixed(1),
+      elev: Number((altitude[i] * 3.28084).toFixed(0)),
+    }));
   }, [altitude, distance]);
 
-  // === Power histogram ===
+  // === Power Histogram ===
   const powerBins = useMemo(() => {
     if (!watts.length) return [];
     const binSize = 25;
     const maxWatt = Math.max(...watts);
     const bins = [];
+
     for (let start = 0; start <= maxWatt; start += binSize) {
       const end = start + binSize;
       const count = watts.filter((w) => w >= start && w < end).length;
@@ -124,12 +117,13 @@ export default function RideDetails({ activity, streams }) {
     return bins;
   }, [watts]);
 
-  // === Cadence histogram ===
+  // === Cadence Histogram ===
   const cadenceBins = useMemo(() => {
     if (!cadence.length) return [];
     const binSize = 5;
     const maxCad = Math.max(...cadence);
     const bins = [];
+
     for (let start = 50; start <= maxCad; start += binSize) {
       const end = start + binSize;
       const count = cadence.filter((c) => c >= start && c < end).length;
@@ -138,17 +132,20 @@ export default function RideDetails({ activity, streams }) {
     return bins;
   }, [cadence]);
 
-  // === HR drift / decoupling ===
+  // === HR Drift ===
   const hrDriftData = useMemo(() => {
     if (!time.length || !hr.length || !watts.length) return [];
     const window = 300;
     const segments = [];
+
     for (let i = 0; i < time.length; i += window) {
       const sliceWatts = watts.slice(i, i + window);
       const sliceHR = hr.slice(i, i + window);
+
       if (sliceWatts.length && sliceHR.length) {
         const avgP = sliceWatts.reduce((a, b) => a + b, 0) / sliceWatts.length;
         const avgHR = sliceHR.reduce((a, b) => a + b, 0) / sliceHR.length;
+
         segments.push({
           segment: (i / window + 1).toFixed(0),
           AvgPower: Math.round(avgP),
@@ -177,6 +174,7 @@ export default function RideDetails({ activity, streams }) {
 
   return (
     <div className="ride-details">
+
       {/* === HEADER === */}
       <div className="card ride-header">
         <div className="header-row">
@@ -184,33 +182,32 @@ export default function RideDetails({ activity, streams }) {
           <TxtButton rideData={{ activity, streams: s }} />
         </div>
 
-        {/* === STATS === */}
         <div className="stats-grid">
           {[
             {
               label: "Distance",
-              value:
-                Number.isFinite(activity.distance)
-                  ? `${(activity.distance / 1609).toFixed(2)} mi`
-                  : "-",
+              value: Number.isFinite(activity.distance)
+                ? `${(activity.distance / 1609).toFixed(2)} mi`
+                : "-",
             },
             {
               label: "Elevation",
-              value:
-                Number.isFinite(activity.total_elevation_gain)
-                  ? `${(activity.total_elevation_gain * 3.28084).toFixed(0)} ft`
-                  : "-",
+              value: Number.isFinite(activity.total_elevation_gain)
+                ? `${(activity.total_elevation_gain * 3.28084).toFixed(0)} ft`
+                : "-",
             },
-            { label: "Moving Time", value: `${Math.round((activity.moving_time || 0) / 60)} min` },
-            { label: "Avg HR", value: `${activity.average_heartrate?.toFixed?.(0) ?? "-"} bpm` },
-            { label: "Avg Power", value: `${activity.average_watts?.toFixed?.(0) ?? "-"} W` },
+            {
+              label: "Moving Time",
+              value: `${Math.round((activity.moving_time || 0) / 60)} min`,
+            },
+            { label: "Avg HR", value: `${activity.average_heartrate ?? "-"} bpm` },
+            { label: "Avg Power", value: `${activity.average_watts ?? "-"} W` },
             {
               label: "Normalized Power",
-              value: `${
+              value:
                 (activity.normalized_power ??
                   activity.weighted_average_watts ??
-                  null)?.toFixed?.(0) || "-"
-              } W`,
+                  "-") + " W",
             },
           ].map((stat, i) => (
             <div className="stat-card" key={i}>
@@ -221,17 +218,23 @@ export default function RideDetails({ activity, streams }) {
         </div>
       </div>
 
-      {/* === MAIN CHART === */}
+      {/* === MAIN COMBINED CHART === */}
       <div className="card chart-card">
         <h3>Power • Heart Rate • Speed</h3>
+
         {chartData.length ? (
           <ResponsiveContainer width="100%" height={350}>
             <LineChart data={chartData}>
               <CartesianGrid stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="time" ticks={tickValues} tick={{ fill: "#aaa", fontSize: 11 }} />
+              <XAxis
+                dataKey="time"
+                ticks={tickValues}
+                tick={{ fill: "#aaa", fontSize: 11 }}
+              />
               <YAxis tick={{ fill: "#aaa", fontSize: 11 }} />
               <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: "#6c72ff" }} />
               <Legend />
+
               <Line type="monotone" dataKey="Power" stroke={colors.Power} strokeWidth={1.8} dot={false} />
               <Line type="monotone" dataKey="HR" stroke={colors.HR} strokeWidth={1.5} dot={false} />
               <Line type="monotone" dataKey="Speed" stroke={colors.Speed} strokeWidth={1.5} dot={false} />
@@ -242,58 +245,57 @@ export default function RideDetails({ activity, streams }) {
         )}
       </div>
 
-        {/* HR Zones */}
+      {/* === ZONE CHARTS === */}
+      <div className="zones-row">
+        <div className="card zone-card">
+          <h3>Power Zones</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={powerZones}>
+              <XAxis dataKey="zone" tick={{ fill: "#aaa" }} />
+              <YAxis tick={{ fill: "#aaa" }} />
+              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "transparent" }} />
+              <Bar dataKey="pct" fill={colors.Power} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
         <div className="card zone-card">
           <h3>Heart Rate Zones</h3>
-          {hrZones.length ? (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={hrZones}>
-                <XAxis dataKey="zone" tick={{ fill: "#aaa" }} />
-                <YAxis tick={{ fill: "#aaa" }} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "transparent" }} />
-                <Bar dataKey="pct" fill={colors.HR} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="empty-note">HR data not available</p>
-          )}
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={hrZones}>
+              <XAxis dataKey="zone" tick={{ fill: "#aaa" }} />
+              <YAxis tick={{ fill: "#aaa" }} />
+              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "transparent" }} />
+              <Bar dataKey="pct" fill={colors.HR} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
-      {/* === DISTRIBUTION CHARTS === */}
+      {/* === DISTRIBUTIONS === */}
       <div className="zones-row">
-        {/* Power Distribution */}
         <div className="card zone-card">
           <h3>Power Distribution</h3>
-          {powerBins.length ? (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={powerBins}>
-                <XAxis dataKey="bin" tick={{ fill: "#aaa", fontSize: 10 }} />
-                <YAxis tick={{ fill: "#aaa", fontSize: 10 }} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "transparent" }} />
-                <Bar dataKey="count" fill={colors.Power} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="empty-note">No power data</p>
-          )}
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={powerBins}>
+              <XAxis dataKey="bin" tick={{ fill: "#aaa", fontSize: 10 }} />
+              <YAxis tick={{ fill: "#aaa", fontSize: 10 }} />
+              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "transparent" }} />
+              <Bar dataKey="count" fill={colors.Power} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
-        {/* Cadence Distribution */}
         <div className="card zone-card">
           <h3>Cadence Distribution</h3>
-          {cadenceBins.length ? (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={cadenceBins}>
-                <XAxis dataKey="bin" tick={{ fill: "#aaa", fontSize: 10 }} />
-                <YAxis tick={{ fill: "#aaa", fontSize: 10 }} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "transparent" }} />
-                <Bar dataKey="count" fill={colors.Cadence} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="empty-note">No cadence data</p>
-          )}
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={cadenceBins}>
+              <XAxis dataKey="bin" tick={{ fill: "#aaa", fontSize: 10 }} />
+              <YAxis tick={{ fill: "#aaa", fontSize: 10 }} />
+              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "transparent" }} />
+              <Bar dataKey="count" fill={colors.Cadence} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
@@ -312,15 +314,23 @@ export default function RideDetails({ activity, streams }) {
                   <stop offset="100%" stopColor="#0b0c10" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="dist" tick={{ fill: "#aaa", fontSize: 11 }} />
+
+              <XAxis dataKey="dist" tick={{ fill: "#aaa" }} />
               <YAxis
-                tick={{ fill: "#aaa", fontSize: 11 }}
-                tickFormatter={(val) => `${val} ft`}
+                tick={{ fill: "#aaa" }}
+                tickFormatter={(v) => `${v} ft`}
                 domain={["dataMin - 50", "dataMax + 150"]}
-                allowDataOverflow
               />
+
               <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "transparent" }} />
-              <Area type="monotone" dataKey="elev" stroke="#7074ff" strokeWidth={2} fill="url(#elevGradient)" isAnimationActive={false} />
+              <Area
+                type="monotone"
+                dataKey="elev"
+                stroke="#7074ff"
+                strokeWidth={2}
+                fill="url(#elevGradient)"
+                isAnimationActive={false}
+              />
             </AreaChart>
           </ResponsiveContainer>
         ) : (
@@ -337,8 +347,10 @@ export default function RideDetails({ activity, streams }) {
               <CartesianGrid stroke="rgba(255,255,255,0.05)" />
               <XAxis dataKey="segment" tick={{ fill: "#aaa" }} />
               <YAxis tick={{ fill: "#aaa" }} />
+
               <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "transparent" }} />
               <Legend />
+
               <Line type="monotone" dataKey="AvgPower" stroke="#6c72ff" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="AvgHR" stroke="#ff7e87" strokeWidth={2} dot={false} />
             </LineChart>
