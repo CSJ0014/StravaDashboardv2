@@ -280,13 +280,12 @@ html, body {
   pointer-events: none;
 }
 
-/* === Power Zone Trace Glow Layers === */
-.power-zone-glow-soft {
-  filter: drop-shadow(0px 0px 6px rgba(112,116,255,0.4));
+.power-zone-soft {
+  filter: drop-shadow(0 0 6px rgba(112,116,255,0.35));
 }
 
-.power-zone-glow-strong {
-  filter: drop-shadow(0px 0px 10px rgba(255,70,120,0.75));
+.power-zone-strong {
+  filter: drop-shadow(0 0 10px rgba(255,70,120,0.7));
 }
 
 /* === Fix Recharts Tooltip Layer === */
