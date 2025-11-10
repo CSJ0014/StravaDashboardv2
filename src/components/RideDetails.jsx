@@ -241,14 +241,15 @@ export default function RideDetails({ activity, streams }) {
           <p className="empty-note">No stream data available</p>
         )}
       </div>
-      
-    {/* === POWER ZONE TRACE (Segmented Glow Line) === */}
+
+      {/* === POWER ZONE TRACE (Segmented Glow Line) === */}
 <div className="card chart-card">
   <h3>Power Zone Trace</h3>
 
   {time.length ? (
     <ResponsiveContainer width="100%" height={240}>
-      <LineChart>
+      {/* ✅ Add `data={chartData}` here to prevent crash */}
+      <LineChart data={chartData}>
         <CartesianGrid stroke="rgba(255,255,255,0.04)" />
 
         <XAxis
@@ -258,9 +259,7 @@ export default function RideDetails({ activity, streams }) {
           tick={{ fill: "#aaa", fontSize: 10 }}
         />
 
-        <YAxis
-          tick={{ fill: "#aaa", fontSize: 10 }}
-        />
+        <YAxis tick={{ fill: "#aaa", fontSize: 10 }} />
 
         <Tooltip
           contentStyle={{
@@ -272,19 +271,19 @@ export default function RideDetails({ activity, streams }) {
           formatter={(value) => [`${value} W`, "Power"]}
         />
 
-        {/* Render segmented zone lines */}
+        {/* Segmented colored lines */}
         {(() => {
           const segments = [];
           for (let i = 0; i < watts.length - 1; i++) {
             const pct = watts[i] / 222;
             let color = "#6c72ff";
 
-            if (pct < 0.55) color = "#3a3f5a";        // Z1
-            else if (pct < 0.75) color = "#4d5b8a";   // Z2
-            else if (pct < 0.9) color = "#7074ff";    // Z3
-            else if (pct < 1.05) color = "#9e99ff";   // Z4 glow
-            else if (pct < 1.2) color = "#ff6fa0";    // Z5 strong glow
-            else color = "#ff3e6c";                    // Z6 full glow
+            if (pct < 0.55) color = "#3a3f5a";       // Z1
+            else if (pct < 0.75) color = "#4d5b8a";  // Z2
+            else if (pct < 0.9) color = "#7074ff";   // Z3
+            else if (pct < 1.05) color = "#9e99ff";  // Z4
+            else if (pct < 1.2) color = "#ff6fa0";   // Z5
+            else color = "#ff3e6c";                  // Z6
 
             segments.push(
               <Line
@@ -307,11 +306,7 @@ export default function RideDetails({ activity, streams }) {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 isAnimationActive={false}
-                className={
-                  pct < 0.9
-                    ? "power-zone-soft"
-                    : "power-zone-strong"
-                }
+                className={pct < 0.9 ? "power-zone-soft" : "power-zone-strong"}
               />
             );
           }
@@ -323,6 +318,7 @@ export default function RideDetails({ activity, streams }) {
     <p className="empty-note">No power data available</p>
   )}
 </div>
+
       
       {/* === ZONE CHARTS === */}
       <div className="zones-row">
